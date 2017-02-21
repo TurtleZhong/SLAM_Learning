@@ -1,0 +1,10 @@
+cmake_minimum_required (VERSION 2.8)
+project(useEigen)
+
+set(CMAKE_BUILD_TYPE "DEBUG")
+#set(CMAKE_BUILD_TYPE "RELEASE")
+#set( CMAKE_CXX_FLAGS "-O3" )
+# Add the Eigen libraries
+include_directories("/usr/include/eigen3")
+add_executable (eigenMatrix eigenMatrix.cpp)
+add_executable (eigenGeometry eigenGeometry.cpp)
