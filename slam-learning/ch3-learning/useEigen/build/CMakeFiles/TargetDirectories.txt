@@ -1,0 +1,2 @@
+/home/m/workspace/projects/slam-learning/ch3-learning/useEigen/build/CMakeFiles/eigenGeometry.dir
+/home/m/workspace/projects/slam-learning/ch3-learning/useEigen/build/CMakeFiles/eigenMatrix.dir
