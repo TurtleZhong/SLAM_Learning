@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <fstream>
 
 using namespace std;
@@ -73,7 +73,7 @@ int main()
                 point[1] = (v-cy)*point[2]/fy;
                 Eigen::Vector3d pointWorld = T*point;
 
-                PointT p ;
+                PointT p;
                 p.x = pointWorld[0];
                 p.y = pointWorld[1];
                 p.z = pointWorld[2];
