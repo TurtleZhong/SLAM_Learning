@@ -13,6 +13,14 @@ void find_feature_matches(Mat& img1, Mat& img2,
 void pose_estimation_2d2d(vector<KeyPoint> keypoints1, vector<KeyPoint> keypoints2,
                           vector<DMatch> matches, Mat& R, Mat& t);
 
+
+void triangulation(const vector<KeyPoint>& keypoints1,
+                   const vector<KeyPoint>& keypoints2,
+                   const vector<DMatch>& matches,
+                   const Mat& R, const Mat& t,
+                         vector<Point3d>& points);
+Point2f pixel2cam ( const Point2d& p, const Mat& K );
+
 int main(int argc, char *argv[])
 {
     cout << "OpenCV version: "
@@ -29,6 +37,7 @@ int main(int argc, char *argv[])
     find_feature_matches(img1, img2, keypoints1, keypoints2, matches, "KNN");
     Mat R,t;
     pose_estimation_2d2d(keypoints1, keypoints2, matches, R, t);
+
 
 
 
@@ -169,3 +178,66 @@ void pose_estimation_2d2d(vector<KeyPoint> keypoints1, vector<KeyPoint> keypoint
 
 
 }
+
+void triangulation(const vector<KeyPoint>& keypoints1,
+                   const vector<KeyPoint>& keypoints2,
+                   const vector<DMatch>& matches,
+                   const Mat& R, const Mat& t,
+                         vector<Point3d>& points)
+{
+    Mat T1 = (Mat_<double>(3,4) << 1,0,0,0,
+                                   0,1,0,0,
+                                   0,0,1,0);
+    Mat T2 = (Mat_<double>(3,4) <<
+              R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2), t.at<double>(0,0),
+              R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2), t.at<double>(1,0),
+              R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2), t.at<double>(2,0),);
+
+    Mat K = (Mat_<double> (3,3) << 520.9, 0, 325.1, 521.0, 249.7, 0, 0, 1);
+    vector<Point2d> pts1,pts2;
+
+    for(DMatch m: matches)
+    {
+        pts1.push_back( pixel2cam(keypoints1[m.queryIdx].pt, K));
+        pts2.push_back( pixel2cam(keypoints2[m.trainIdx].pt, K));
+    }
+
+    Mat pts4d;
+    triangulatePoints(T1, T2, pts1, pts2, pts4d);
+
+    for(int i = 0; i < pts4d.cols; i++)
+    {
+        Mat x = pts4d.col(i);
+        x /= x.at<float>(3,0);
+        Point3d p (x.at<float>(0,0), x.at<float>(1,0), x.at<float>(2,0));
+        points.push_back(p);
+    }
+
+}
+
+
+Point2f pixel2cam ( const Point2d& p, const Mat& K )
+{
+    return Point2f
+    (
+        ( p.x - K.at<double>(0,2) ) / K.at<double>(0,0),
+        ( p.y - K.at<double>(1,2) ) / K.at<double>(1,1)
+    );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
