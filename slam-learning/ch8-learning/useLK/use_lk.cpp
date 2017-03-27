@@ -76,7 +76,5 @@ int main(int argc, char** argv)
         last_color = color;
     }
 
-
-
     return 0;
 }
