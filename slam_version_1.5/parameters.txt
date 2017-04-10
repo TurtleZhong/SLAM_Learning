@@ -1,0 +1,39 @@
+
+detector=ORB
+descriptor=ORB
+
+good_match_threshold=10
+
+# camera
+camera.cx=325.5;
+camera.cy=253.5;
+camera.fx=518.0;
+camera.fy=519.0;
+camera.scale=1000.0;
+
+start_index=2
+end_index=2488
+# data_set directory
+use_tum=yes
+tum_dataset_path=/home/m/work/slam/data/tum/rgbd_dataset_freiburg3_long_office_household/
+rgb_dir=/home/m/work/slam/data/rgb/
+rgb_extension=.png
+depth_dir=/home/m/work/slam/data/depth/
+depth_extension=.png
+
+voxel_grid=0.01
+# visulation option
+visualize_pointcloud=yes
+
+min_good_match=10
+
+min_inliers=5
+# max motion error
+max_norm=0.35
+
+keyframe_threshold=0.1
+max_norm_lp=2.0
+# Loop closure
+check_loop_closure=yes
+nearby_loops=20
+random_loops=15
