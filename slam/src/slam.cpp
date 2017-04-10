@@ -157,7 +157,7 @@ int main( int argc, char** argv )
     cout<<RESET"optimizing pose graph, vertices: "<<globalOptimizer.vertices().size()<<endl;
     globalOptimizer.save("/home/m/work/slam/result/g2o/result_before.g2o");
     globalOptimizer.initializeOptimization();
-    globalOptimizer.optimize( 249 ); //可以指定优化步数
+    globalOptimizer.optimize( 100 ); //可以指定优化步数
     globalOptimizer.save( "/home/m/work/slam/result/g2o/result_after.g2o" );
     cout<<"Optimization done."<<endl;
 
@@ -216,6 +216,8 @@ CHECK_RESULT checkKeyframes( FRAME& f1, FRAME& f2, g2o::SparseOptimizer& opti, b
     static double keyframe_threshold = pd.getDoubleData("keyframe_threshold");
     static double max_norm_lp = pd.getDoubleData("max_norm_l");
     static CAMERA_INTRINSIC_PARAMETERS camera;
+    //static g2o::RobustKernel* robustKernel=g2o::RobustKernelFactory::instance()->construct("Cauchy");
+    static g2o::RobustKernel* robustKernel = new g2o::RobustKernelCauchy();
     // 比较f1 和 f2
     RESULT_OF_PNP result = estimateMotion( f1, f2, camera, "knn" );
     if ( result.inliers < min_inliers ) //inliers不够，放弃该帧
@@ -248,9 +250,12 @@ CHECK_RESULT checkKeyframes( FRAME& f1, FRAME& f2, g2o::SparseOptimizer& opti, b
     // 边部分
     g2o::EdgeSE3* edge = new g2o::EdgeSE3();
     // 连接此边的两个顶点id
-    edge->setVertex( 0, opti.vertex(f1.frameID ));
-    edge->setVertex( 1, opti.vertex(f2.frameID ));
-    edge->setRobustKernel( new g2o::RobustKernelHuber() );
+//    edge->setVertex( 0, opti.vertex(f1.frameID ));
+//    edge->setVertex( 1, opti.vertex(f2.frameID ));
+//    edge->setRobustKernel( new g2o::RobustKernelHuber() );
+    edge->vertices()[0]=opti.vertex(f1.frameID);
+    edge->vertices()[1]=opti.vertex(f2.frameID);
+    edge->setRobustKernel(robustKernel);//relieve the false positive problem, avoid a few wrong edges influence the total result
     // 信息矩阵
     Eigen::Matrix<double, 6, 6> information = Eigen::Matrix< double, 6,6 >::Identity();
     // 信息矩阵是协方差矩阵的逆，表示我们对边的精度的预先估计
@@ -262,8 +267,8 @@ CHECK_RESULT checkKeyframes( FRAME& f1, FRAME& f2, g2o::SparseOptimizer& opti, b
     edge->setInformation( information );
     // 边的估计即是pnp求解之结果
     Eigen::Isometry3d T = cvMat2Eigen( result.rvec, result.tvec );
-    edge->setMeasurement( T );
-    //edge->setMeasurement( T.inverse() );
+    // edge->setMeasurement( T );
+    edge->setMeasurement( T.inverse() );
 
     // 将此边加入图中
     opti.addEdge(edge);

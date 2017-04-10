@@ -49,26 +49,82 @@ cv::Point3f point2dTo3d( cv::Point3f& point, CAMERA_INTRINSIC_PARAMETERS& camera
 
 FRAME readFrame( int index, PARAM_READER& pd )
 {
+//    FRAME f;
+//    string rgbDir   =   pd.getStringData("rgb_dir");
+//    string depthDir =   pd.getStringData("depth_dir");
+
+//    string rgbExt   =   ".png";
+//    string depthExt =   ".png";
+
+//    stringstream ss;
+//    ss<<rgbDir<<index<<rgbExt;
+//    string filename;
+//    ss>>filename;
+//    f.rgb = cv::imread( filename );
+
+//    ss.clear();
+//    filename.clear();
+//    ss<<depthDir<<index<<depthExt;
+//    ss>>filename;
+
+//    f.depth = cv::imread( filename, -1 );
+//    f.frameID = index;
+//    return f;
     FRAME f;
-    string rgbDir   =   pd.getStringData("rgb_dir");
-    string depthDir =   pd.getStringData("depth_dir");
+    int use_tum = pd.getIntData("use_tum");
+    string dataset_path = "/home/m/work/slam/data/tum/rgbd_dataset_freiburg3_long_office_household/";
 
-    string rgbExt   =   ".png";
-    string depthExt =   ".png";
+    string associate_path = dataset_path + "associate.txt";
 
-    stringstream ss;
-    ss<<rgbDir<<index<<rgbExt;
-    string filename;
-    ss>>filename;
-    f.rgb = cv::imread( filename );
+    string rgb_file, depth_file, time_rgb, time_depth;
+    ifstream fin(associate_path);
+    int j = 0;
+    cout << "use_tum = " << use_tum << endl;
 
-    ss.clear();
-    filename.clear();
-    ss<<depthDir<<index<<depthExt;
-    ss>>filename;
 
-    f.depth = cv::imread( filename, -1 );
-    f.frameID = index;
+    if(use_tum == 0)
+    {
+        string rgbDir   =   pd.getStringData("rgb_dir");
+        string depthDir =   pd.getStringData("depth_dir");
+
+
+        rgbDir += "rgb/";
+        depthDir += "depth/";
+
+        cout << "rgb: " << rgbDir << endl;
+        cout << "depth: " << depthDir << endl;
+
+        string rgbExt   =   ".png";
+        string depthExt =   ".png";
+
+        stringstream ss;
+        ss<<rgbDir<< index<<rgbExt;
+        string filename;
+        ss>>filename;
+        f.rgb = cv::imread( filename );
+
+        ss.clear();
+        filename.clear();
+        ss<<depthDir<< index<<depthExt;
+        ss>>filename;
+
+        f.depth = cv::imread( filename , -1 );
+        f.frameID = index;
+    }
+    else if (use_tum == 1)
+    {
+        string temp;
+        while(getline(fin, temp) && j < index - 1 )
+        {
+            j++;
+        }
+        fin >> time_rgb >> rgb_file >> time_depth >> depth_file;
+        f.rgb = cv::imread( dataset_path + rgb_file );
+        f.depth = cv::imread((dataset_path + depth_file) , -1);
+        f.frameID = index;
+    }
+
+
     return f;
 }
 

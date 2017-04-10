@@ -28,9 +28,7 @@ using namespace cv;
 #include <pcl/filters/voxel_grid.h>
 
 
-#define PARAM_FILE_PATH "/home/m/work/slam/src/param.xml"
-
-//const string PARAM_FILE_PATH = "/home/m/work/slam/src/param.xml";
+#define PARAM_FILE_PATH "/home/m/ws/src/ros_projects/image_process/src/param.xml"
 
 
 // 类型定义
@@ -44,7 +42,7 @@ public:
     double cx, cy, fx, fy, scale;
     CAMERA_INTRINSIC_PARAMETERS()
     {
-        FileStorage fs(PARAM_FILE_PATH, FileStorage::READ);
+        FileStorage fs("/home/m/ws/src/ros_projects/image_process/src/param.xml", FileStorage::READ);
         fs["camera_cx"] >> this->cx;
         fs["camera_cy"] >> this->cy;
         fs["camera_fx"] >> this->fx;
