@@ -139,10 +139,10 @@ int main( int argc, char** argv )
 
     // 优化
     cout<<RESET"optimizing pose graph, vertices: "<<globalOptimizer.vertices().size()<<endl;
-    globalOptimizer.save("./result_before.g2o");
+    globalOptimizer.save("../result/g2o/result_before.g2o");
     globalOptimizer.initializeOptimization();
     globalOptimizer.optimize( 100 ); //可以指定优化步数
-    globalOptimizer.save( "./result_after.g2o" );
+    globalOptimizer.save( "../result/g2o/result_after.g2o" );
     cout<<"Optimization done."<<endl;
 
     // 拼接点云地图
@@ -179,7 +179,7 @@ int main( int argc, char** argv )
     voxel.setInputCloud( output );
     voxel.filter( *tmp );
     //存储
-    pcl::io::savePCDFile( "./result.pcd", *tmp );
+    pcl::io::savePCDFile( "../result/pcd/result.pcd", *tmp );
     
     cout<<"Final map is saved."<<endl;
     return 0;

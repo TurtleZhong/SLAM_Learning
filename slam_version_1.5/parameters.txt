@@ -9,12 +9,12 @@ camera.cx=325.5;
 camera.cy=253.5;
 camera.fx=518.0;
 camera.fy=519.0;
-camera.scale=1000.0;
+camera.scale=5000.0;
 
 start_index=2
-end_index=2488
+end_index=1126
 # data_set directory
-use_tum=yes
+use_tum=no
 tum_dataset_path=/home/m/work/slam/data/tum/rgbd_dataset_freiburg3_long_office_household/
 rgb_dir=/home/m/work/slam/data/rgb/
 rgb_extension=.png

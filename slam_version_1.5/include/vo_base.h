@@ -85,7 +85,7 @@ PointCloud::Ptr joinPointCloud( PointCloud::Ptr original, FRAME& newFrame, Eigen
 class ParameterReader
 {
 public:
-    ParameterReader( string filename="/home/m/rgbd-slam-tutorial-gx-master/part VII/parameters.txt" )
+    ParameterReader( string filename="/home/m/work/slam_version_1.5/parameters.txt" )
     {
         ifstream fin( filename.c_str() );
         if (!fin)

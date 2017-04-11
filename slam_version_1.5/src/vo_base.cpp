@@ -12,8 +12,8 @@ PointCloud::Ptr image2PointCloud( cv::Mat& rgb, cv::Mat& depth, CAMERA_INTRINSIC
 {
     PointCloud::Ptr cloud ( new PointCloud );
 
-    for (int m = 0; m < depth.rows; m+=2)
-        for (int n=0; n < depth.cols; n+=2)
+    for (int m = 0; m < depth.rows; m+=1)
+        for (int n=0; n < depth.cols; n+=1)
         {
             // 获取深度图中(m,n)处的值
             ushort d = depth.ptr<ushort>(m)[n];
@@ -151,9 +151,9 @@ RESULT_OF_PNP estimateMotion( FRAME& frame1, FRAME& frame2, CAMERA_INTRINSIC_PAR
 //        }
     }
 
-    Mat resultImage;
-    drawMatches(frame1.rgb, frame1.kp, frame2.rgb, frame2.kp, goodMatches, resultImage);
-    imshow("result of Image", resultImage);
+    //Mat resultImage;
+    //drawMatches(frame1.rgb, frame1.kp, frame2.rgb, frame2.kp, goodMatches, resultImage);
+    //imshow("result of Image", resultImage);
     cout << "We got " << goodMatches.size() << " good Matchs" << endl;
 
     if (goodMatches.size() <= 5) 
