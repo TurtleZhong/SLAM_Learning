@@ -9,7 +9,7 @@ camera.cx=325.5;
 camera.cy=253.5;
 camera.fx=518.0;
 camera.fy=519.0;
-camera.scale=5000.0;
+camera.scale=1000.0;
 
 start_index=2
 end_index=1126

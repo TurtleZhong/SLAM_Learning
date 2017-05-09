@@ -282,6 +282,7 @@ CHECK_RESULT checkKeyframes( FRAME& f1, FRAME& f2, g2o::SparseOptimizer& opti, b
     edge->setVertex( 0, opti.vertex(f1.frameID ));
     edge->setVertex( 1, opti.vertex(f2.frameID ));
     edge->setRobustKernel( new g2o::RobustKernelHuber() );
+
     // 信息矩阵
     Eigen::Matrix<double, 6, 6> information = Eigen::Matrix< double, 6,6 >::Identity();
     // 信息矩阵是协方差矩阵的逆，表示我们对边的精度的预先估计
