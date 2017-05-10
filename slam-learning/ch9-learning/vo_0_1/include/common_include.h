@@ -23,17 +23,24 @@
 
 // define the commonly included file to avoid a long include list
 // for Eigen
-#include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/Geometry>
+//#include <eigen3/Eigen/Core>
+//#include <eigen3/Eigen/Geometry>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 
 // for Sophus
 #include <sophus/se3.h>
+#include <sophus/so3.h>
 using Sophus::SE3;
+using Sophus::SO3;
 
 // for cv
 #include <opencv2/opencv.hpp>
+
 using cv::Mat;
 
 // std 
