@@ -15,6 +15,7 @@ public:
     SE3                              T_c_w_;          // transform from world to camera
     Camera::Ptr                      camera_;         // Pinhole RGBD camera model (for deteil please see camera.h)
     Mat                              color_, depth_;  // color and depth image (640*480)
+    vector<cv::KeyPoint>             kp;
 
 public:
     Frame();

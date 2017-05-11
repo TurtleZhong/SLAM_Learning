@@ -25,6 +25,7 @@
 
 #include "config.h"
 #include "visual_odometry.h"
+using namespace cv;
 
 namespace myslam
 {
@@ -38,8 +39,8 @@ VisualOdometry::VisualOdometry() :
     match_ratio_        = Config::get<float> ( "match_ratio" );
     max_num_lost_       = Config::get<float> ( "max_num_lost" );
     min_inliers_        = Config::get<int> ( "min_inliers" );
-    key_frame_min_rot_   = Config::get<double> ( "keyframe_rotation" );
-    key_frame_min_trans_ = Config::get<double> ( "keyframe_translation" );
+    key_frame_min_rot   = Config::get<double> ( "keyframe_rotation" );
+    key_frame_min_trans = Config::get<double> ( "keyframe_translation" );
     orb_ = cv::ORB::create ( num_of_features_, scale_factor_, level_pyramid_ );
 }
 
@@ -59,7 +60,9 @@ bool VisualOdometry::addFrame ( Frame::Ptr frame )
         map_->insertKeyFrame ( frame );
         // extract features from first frame
         extractKeyPoints();
+        keypoints_ref_ = keypoints_curr_;
         computeDescriptors();
+        //descriptors_ref_ = descriptors_curr_;
         // compute the 3d position of features in ref frame
         setRef3DPoints();
         break;
@@ -74,11 +77,16 @@ bool VisualOdometry::addFrame ( Frame::Ptr frame )
         if ( checkEstimatedPose() == true ) // a good estimation
         {
             curr_->T_c_w_ = T_c_r_estimated_ * ref_->T_c_w_;  // T_c_w = T_c_r*T_r_w
-            ref_ = curr_;
-            setRef3DPoints();
+            //ref_ = curr_;
+            //setRef3DPoints();
             num_lost_ = 0;
             if ( checkKeyFrame() == true ) // is a key-frame
             {
+                ref_ = curr_;
+                keypoints_ref_ = keypoints_curr_;
+                //descriptors_ref_ = descriptors_curr_;
+                setRef3DPoints();
+
                 addKeyFrame();
             }
         }
@@ -115,27 +123,48 @@ void VisualOdometry::computeDescriptors()
 
 void VisualOdometry::featureMatching()
 {
-    boost::timer timer;
-    vector<cv::DMatch> matches;
-    matcher_flann_.match( descriptors_ref_, descriptors_curr_, matches );
-    // select the best matches
-    float min_dis = std::min_element (
-                        matches.begin(), matches.end(),
-                        [] ( const cv::DMatch& m1, const cv::DMatch& m2 )
-    {
-        return m1.distance < m2.distance;
-    } )->distance;
+    //    // match desp_ref and desp_curr, use OpenCV's brute force match
+    //    vector<cv::DMatch> matches;
+    //    cv::BFMatcher matcher ( cv::NORM_HAMMING );
+    //    matcher.match ( descriptors_ref_, descriptors_curr_, matches );
+    //    // select the best matches
+    //    float min_dis = std::min_element (
+    //                        matches.begin(), matches.end(),
+    //                        [] ( const cv::DMatch& m1, const cv::DMatch& m2 )
+    //    {
+    //        return m1.distance < m2.distance;
+    //    } )->distance;
 
-    feature_matches_.clear();
-    for ( cv::DMatch& m : matches )
+    //    feature_matches_.clear();
+    //    for ( cv::DMatch& m : matches )
+    //    {
+    //        if ( m.distance < max<float> ( min_dis*match_ratio_, 30.0 ) )
+    //        {
+    //            feature_matches_.push_back(m);
+    //        }
+    //    }
+
+    flann::Index flannIndex(descriptors_curr_, flann::LshIndexParams(12, 20, 2), cvflann::FLANN_DIST_HAMMING);
+    cout << "using knn to match the feature" << endl;
+    /*Match the feature*/
+    Mat matchIndex(descriptors_ref_.rows, 2, CV_32SC1);
+    Mat matchDistance(descriptors_ref_.rows, 2, CV_32SC1);
+    flannIndex.knnSearch(descriptors_ref_, matchIndex, matchDistance, 2, flann::SearchParams());
+
+    //vector<DMatch> goodMatches;
+    for (int i = 0; i < matchDistance.rows; i++)
     {
-        if ( m.distance < max<float> ( min_dis*match_ratio_, 30.0 ) )
+        if(matchDistance.at<float>(i,0) < 0.7 * matchDistance.at<float>(i, 1))
         {
-            feature_matches_.push_back(m);
+            DMatch dmatchs(i, matchIndex.at<int>(i,0), matchDistance.at<float>(i,0));
+            feature_matches_.push_back(dmatchs);
         }
     }
+
+    Mat resultImage;
+    cv::drawMatches(ref_->color_, keypoints_ref_, curr_->color_, keypoints_curr_, feature_matches_, resultImage);
+    cv::imshow("result of Image", resultImage);
     cout<<"good matches: "<<feature_matches_.size()<<endl;
-    cout<<"match cost time: "<<timer.elapsed()<<endl;
 }
 
 void VisualOdometry::setRef3DPoints()
@@ -149,8 +178,8 @@ void VisualOdometry::setRef3DPoints()
         if ( d > 0)
         {
             Vector3d p_cam = ref_->camera_->pixel2camera(
-                Vector2d(keypoints_curr_[i].pt.x, keypoints_curr_[i].pt.y), d
-            );
+                        Vector2d(keypoints_curr_[i].pt.x, keypoints_curr_[i].pt.y), d
+                        );
             pts_3d_ref_.push_back( cv::Point3f( p_cam(0,0), p_cam(1,0), p_cam(2,0) ));
             descriptors_ref_.push_back(descriptors_curr_.row(i));
         }
@@ -170,18 +199,22 @@ void VisualOdometry::poseEstimationPnP()
     }
 
     Mat K = ( cv::Mat_<double>(3,3)<<
-        ref_->camera_->fx_, 0, ref_->camera_->cx_,
-        0, ref_->camera_->fy_, ref_->camera_->cy_,
-        0,0,1
-    );
+              ref_->camera_->fx_, 0, ref_->camera_->cx_,
+              0, ref_->camera_->fy_, ref_->camera_->cy_,
+              0,0,1
+              );
     Mat rvec, tvec, inliers;
+    cout << "K = " << K << endl;
+    cout << "pts3d.size()= " << pts3d.size() << endl;
+    cout << "pts2d.size()= " << pts2d.size() << endl;
+
     cv::solvePnPRansac( pts3d, pts2d, K, Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers );
     num_inliers_ = inliers.rows;
     cout<<"pnp inliers: "<<num_inliers_<<endl;
     T_c_r_estimated_ = SE3(
-        SO3(rvec.at<double>(0,0), rvec.at<double>(1,0), rvec.at<double>(2,0)),
-        Vector3d( tvec.at<double>(0,0), tvec.at<double>(1,0), tvec.at<double>(2,0))
-    );
+                SO3(rvec.at<double>(0,0), rvec.at<double>(1,0), rvec.at<double>(2,0)),
+                Vector3d( tvec.at<double>(0,0), tvec.at<double>(1,0), tvec.at<double>(2,0))
+                );
 }
 
 bool VisualOdometry::checkEstimatedPose()
@@ -207,7 +240,7 @@ bool VisualOdometry::checkKeyFrame()
     Sophus::Vector6d d = T_c_r_estimated_.log();
     Vector3d trans = d.head<3>();
     Vector3d rot = d.tail<3>();
-    if ( rot.norm() >key_frame_min_rot_ || trans.norm() >key_frame_min_trans_ )
+    if ( rot.norm() >key_frame_min_rot || trans.norm() >key_frame_min_trans )
         return true;
     return false;
 }
@@ -216,6 +249,10 @@ void VisualOdometry::addKeyFrame()
 {
     cout<<"adding a key-frame"<<endl;
     map_->insertKeyFrame ( curr_ );
+    descriptors_ref_ = descriptors_curr_;
+    keypoints_ref_ = keypoints_curr_;
+
+
 }
 
 }

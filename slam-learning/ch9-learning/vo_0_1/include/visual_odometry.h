@@ -3,6 +3,7 @@
 
 #include "common_include.h"
 #include "map.h"
+#include <opencv2/features2d/features2d.hpp>
 
 namespace myslam
 {
@@ -13,7 +14,7 @@ public:
     enum VOstate {
         INITIALIZING = -1,
         OK = 0,
-        LOST = 1
+        LOST
     };
 
     /*data members are below*/
@@ -24,7 +25,9 @@ public:
 
     cv::Ptr<cv::ORB>        orb_;                  /*orb detector and computer*/
     vector<cv::Point3f>     pts_3d_ref_;           /*3d points in reference frame*/
+    vector<cv::KeyPoint>    keypoints_ref_;        /*keypoints in ref frame*/
     vector<cv::KeyPoint>    keypoints_curr_;       /*keypoints in current frame*/
+
 
     Mat                     descriptors_curr_;     /*descriptor in current frame*/
     Mat                     descriptors_ref_;      /*descriptor in reference frame*/
@@ -35,14 +38,14 @@ public:
     int                     num_lost_;             /*number of lost times*/
 
     int                     num_of_features_;      /*number of features*/
-    int                     scale_factor_;         /*scale in image pyramid*/
+    double                  scale_factor_;         /*scale in image pyramid*/
     int                     level_pyramid_;        /*number of pyramid levels*/
     float                   match_ratio_;          /*ratio for selecting good matches*/
     int                     max_num_lost_;         /*max number of continuos lost times*/
     int                     min_inliers_;          /*minimum inliers*/
 
-    double                  key_frame_min_rot_;    /*min rotation of two keyframes*/
-    double                  key_frame_min_trans_;  /*min translation of two keyframes*/
+    double                  key_frame_min_rot;    /*min rotation of two keyframes*/
+    double                  key_frame_min_trans;  /*min translation of two keyframes*/
 
 public:
     VisualOdometry();

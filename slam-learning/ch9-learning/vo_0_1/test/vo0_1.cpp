@@ -12,18 +12,31 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+    cout << "OpenCV version: "
+         << CV_MAJOR_VERSION << "."
+         << CV_MINOR_VERSION << "."
+         << CV_SUBMINOR_VERSION
+         << endl;
+
     Config::setParameterFile("/home/m/work/slam-learning/ch9-learning/vo_0_1/config/default.yaml");
-    VisualOdometry::Ptr vo ( new VisualOdometry );
+//    if ( argc != 2 )
+//    {
+//        cout<<"usage: run_vo parameter_file"<<endl;
+//        return 1;
+//    }
 
-    string dataset_dir = Config::get<string> ("dataset_dir");
-    cout << "dataset: " << dataset_dir << endl;
+//    myslam::Config::setParameterFile ( argv[1] );
+    myslam::VisualOdometry::Ptr vo ( new myslam::VisualOdometry );
 
-    ifstream fin (dataset_dir + "/associate.txt");
-    if( !fin )
+    string dataset_dir = myslam::Config::get<string> ( "dataset_dir" );
+    cout<<"dataset: "<<dataset_dir<<endl;
+    ifstream fin ( dataset_dir+"/associate.txt" );
+    if ( !fin )
     {
-        cout << "please generate the associate file called associate.txt" << endl;
+        cout<<"please generate the associate file called associate.txt!"<<endl;
         return 1;
     }
+
     vector<string> rgb_files, depth_files;
     vector<double> rgb_times, depth_times;
     while ( !fin.eof() )
@@ -39,7 +52,8 @@ int main(int argc, char *argv[])
             break;
     }
 
-    Camera::Ptr camera ( new myslam::Camera );
+    myslam::Camera::Ptr camera ( new myslam::Camera );
+
 
     // visualization
     cv::viz::Viz3d vis("Visual Odometry");
@@ -60,7 +74,7 @@ int main(int argc, char *argv[])
         Mat depth = cv::imread ( depth_files[i], -1 );
         if ( color.data==nullptr || depth.data==nullptr )
             break;
-        Frame::Ptr pFrame = Frame::createFrame();
+        myslam::Frame::Ptr pFrame = myslam::Frame::createFrame();
         pFrame->camera_ = camera;
         pFrame->color_ = color;
         pFrame->depth_ = depth;
@@ -70,21 +84,21 @@ int main(int argc, char *argv[])
         vo->addFrame ( pFrame );
         cout<<"VO costs time: "<<timer.elapsed()<<endl;
 
-        if ( vo->state_ == VisualOdometry::LOST )
+        if ( vo->state_ == myslam::VisualOdometry::LOST )
             break;
         SE3 Tcw = pFrame->T_c_w_.inverse();
 
         // show the map and the camera pose
         cv::Affine3d M(
-                    cv::Affine3d::Mat3(
-                        Tcw.rotation_matrix()(0,0), Tcw.rotation_matrix()(0,1), Tcw.rotation_matrix()(0,2),
-                        Tcw.rotation_matrix()(1,0), Tcw.rotation_matrix()(1,1), Tcw.rotation_matrix()(1,2),
-                        Tcw.rotation_matrix()(2,0), Tcw.rotation_matrix()(2,1), Tcw.rotation_matrix()(2,2)
-                        ),
-                    cv::Affine3d::Vec3(
-                        Tcw.translation()(0,0), Tcw.translation()(1,0), Tcw.translation()(2,0)
-                        )
-                    );
+            cv::Affine3d::Mat3(
+                Tcw.rotation_matrix()(0,0), Tcw.rotation_matrix()(0,1), Tcw.rotation_matrix()(0,2),
+                Tcw.rotation_matrix()(1,0), Tcw.rotation_matrix()(1,1), Tcw.rotation_matrix()(1,2),
+                Tcw.rotation_matrix()(2,0), Tcw.rotation_matrix()(2,1), Tcw.rotation_matrix()(2,2)
+            ),
+            cv::Affine3d::Vec3(
+                Tcw.translation()(0,0), Tcw.translation()(1,0), Tcw.translation()(2,0)
+            )
+        );
 
         cv::imshow("image", color );
         cv::waitKey(1);
@@ -92,9 +106,7 @@ int main(int argc, char *argv[])
         vis.spinOnce(1, false);
     }
 
-
-
-
+    cout << "We got " << vo->map_->keyframes_.size() << " keyframes!" <<  endl;
 
     return 0;
 }
