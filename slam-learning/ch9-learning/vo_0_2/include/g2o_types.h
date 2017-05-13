@@ -49,7 +49,7 @@ public:
     virtual bool read( std::istream& in ){}
     virtual bool write(std::ostream& os) const {}
 
-    Vertor3d point_;
+    Vector3d point_;
     Camera* camera_;
 
 };
