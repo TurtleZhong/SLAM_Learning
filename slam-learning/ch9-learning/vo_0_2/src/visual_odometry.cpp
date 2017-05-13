@@ -244,9 +244,6 @@ void VisualOdometry::addKeyFrame()
 {
     cout<<"adding a key-frame"<<endl;
     map_->insertKeyFrame ( curr_ );
-    descriptors_ref_ = descriptors_curr_;
-    keypoints_ref_ = keypoints_curr_;
-
 
 }
 

@@ -19,13 +19,7 @@ int main(int argc, char *argv[])
          << endl;
 
     Config::setParameterFile("/home/m/work/slam-learning/ch9-learning/vo_0_1/config/default.yaml");
-//    if ( argc != 2 )
-//    {
-//        cout<<"usage: run_vo parameter_file"<<endl;
-//        return 1;
-//    }
 
-//    myslam::Config::setParameterFile ( argv[1] );
     myslam::VisualOdometry::Ptr vo ( new myslam::VisualOdometry );
 
     string dataset_dir = myslam::Config::get<string> ( "dataset_dir" );
