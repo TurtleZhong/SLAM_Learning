@@ -33,7 +33,10 @@ public:
     Mat                     descriptors_ref_;      /*descriptor in reference frame*/
     vector<cv::DMatch>      feature_matches_;      /**/
     cv::FlannBasedMatcher   matcher_flann_;        /* flann matcher */
-    SE3                     T_c_r_estimated_;      /*the estimated pose of current frame*/
+    vector<MapPoint::Ptr>   match_3dpts_;          /*matched 3d points*/
+    vector<int>             match_2dkp_index_;     /*matched 2d pixels (index of kp_curr)*/
+
+    SE3                     T_c_w_estimated_;      /*the estimated pose of current frame cuz using map points to calc the T */
     int                     num_inliers_;          /*number of inlier features */
     int                     num_lost_;             /*number of lost times*/
 
@@ -44,8 +47,9 @@ public:
     int                     max_num_lost_;         /*max number of continuos lost times*/
     int                     min_inliers_;          /*minimum inliers*/
 
-    double                  key_frame_min_rot;    /*min rotation of two keyframes*/
-    double                  key_frame_min_trans;  /*min translation of two keyframes*/
+    double                  key_frame_min_rot;     /*min rotation of two keyframes*/
+    double                  key_frame_min_trans;   /*min translation of two keyframes*/
+    double                  map_point_erase_ratio_;/*remove map point ratio*/
 
 public:
     VisualOdometry();
@@ -65,6 +69,11 @@ protected:
     void addKeyFrame();
     bool checkEstimatedPose();
     bool checkKeyFrame();
+
+    void addMapPoints();
+    void optimizeMap();
+    double getViewAngle( Frame::Ptr frame, MapPoint::Ptr point );
+
 
 };
 

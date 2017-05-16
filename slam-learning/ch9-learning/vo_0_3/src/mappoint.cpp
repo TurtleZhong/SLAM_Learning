@@ -30,7 +30,7 @@ MapPoint::Ptr MapPoint::createMapPoint(const Eigen::Vector3d &pos_world,
 {
 
     return MapPoint::Ptr(
-                new MapPoint(factory_id++, pos_world, norm_, descriptor_, frame)
+                new MapPoint(factory_id_++, pos_world, norm_, frame, descriptor_)
                 );
 }
 
