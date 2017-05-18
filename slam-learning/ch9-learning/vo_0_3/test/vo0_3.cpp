@@ -66,8 +66,6 @@ int main(int argc, char *argv[])
         cout<<"****** loop "<<i<<" ******"<<endl;
         Mat color = cv::imread ( rgb_files[i] );
         Mat depth = cv::imread ( depth_files[i], -1 );
-        cv::imshow("test", color);
-        cv::waitKey(0);
         if ( color.data==nullptr || depth.data==nullptr )
             break;
         myslam::Frame::Ptr pFrame = myslam::Frame::createFrame();

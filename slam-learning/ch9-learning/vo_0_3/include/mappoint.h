@@ -26,10 +26,9 @@ public:
 
 public:
     MapPoint();
-    MapPoint(
-            long id,
-             Vector3d position,
-             Vector3d norm,
+    MapPoint(long id,
+            const Eigen::Vector3d &position,
+            const Eigen::Vector3d &norm,
             Frame* frame = nullptr,
             const Mat& descriptor_ = Mat()
             );

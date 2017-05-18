@@ -1,11 +1,11 @@
 CMAKE_MINIMUM_REQUIRED( VERSION 2.8 )
-#set(CMAKE_PREFIX_PATH "/usr/local/opencv3/share/OpenCV")
+set(CMAKE_PREFIX_PATH "/usr/local/opencv3/share/OpenCV")
 PROJECT( vo_0_3 )
 
-#set(OpenCV_DIR "/usr/local/opencv3")
-#find_package(OpenCV REQUIRED)
+set(OpenCV_DIR "/usr/local/opencv3")
+find_package(OpenCV REQUIRED)
 
-#include_directories("/usr/local/opencv3/include")
+include_directories("/usr/local/opencv3/include")
 
 SET(CMAKE_CXX_COMPILER "g++")
 SET( CMAKE_BUILD_TYPE Release )
@@ -21,8 +21,8 @@ LINK_DIRECTORIES( ${PROJECT_SOURCE_DIR}/lib)
 # Eigen
 include_directories( "/usr/include/eigen3" )
 # OpenCV
-find_package( OpenCV 3.2 REQUIRED )
-include_directories( ${OpenCV_INCLUDE_DIRS} )
+#find_package( OpenCV 3.2 REQUIRED )
+#include_directories( ${OpenCV_INCLUDE_DIRS} )
 # Sophus 
 find_package( Sophus REQUIRED )
 include_directories( ${Sophus_INCLUDE_DIRS} )
