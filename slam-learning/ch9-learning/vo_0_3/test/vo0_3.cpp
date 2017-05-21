@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
          << CV_SUBMINOR_VERSION
          << endl;
 
-    Config::setParameterFile("/home/m/work/slam-learning/ch9-learning/vo_0_1/config/default.yaml");
+    Config::setParameterFile("/home/m/work/slam-learning/ch9-learning/vo_0_3/config/default.yaml");
 
     myslam::VisualOdometry::Ptr vo ( new myslam::VisualOdometry );
 
@@ -52,13 +52,18 @@ int main(int argc, char *argv[])
     cv::viz::Viz3d vis ( "Visual Odometry" );
     cv::viz::WCoordinateSystem world_coor ( 1.0 ), camera_coor ( 0.5 );
     cv::Point3d cam_pos ( 0, -1.0, -1.0 ), cam_focal_point ( 0,0,0 ), cam_y_dir ( 0,1,0 );
+    //cv::Point3d cam_pos(3.0,3.0,3.0), cam_focal_point(3.0,3.0,2.0), cam_y_dir(-1.0,0.0,0.0);
     cv::Affine3d cam_pose = cv::viz::makeCameraPose ( cam_pos, cam_focal_point, cam_y_dir );
     vis.setViewerPose ( cam_pose );
 
     world_coor.setRenderingProperty ( cv::viz::LINE_WIDTH, 2.0 );
     camera_coor.setRenderingProperty ( cv::viz::LINE_WIDTH, 1.0 );
+
     vis.showWidget ( "World", world_coor );
     vis.showWidget ( "Camera", camera_coor );
+
+
+
 
     cout<<"read total "<<rgb_files.size() <<" entries"<<endl;
     for ( int i=0; i<rgb_files.size(); i++ )
@@ -104,6 +109,13 @@ int main(int argc, char *argv[])
 
         cv::imshow ( "image", img_show );
         cv::waitKey ( 1 );
+
+        cv::viz::WCameraPosition cpw(0.1); // Coordinate axes
+        //cv::viz::WCameraPosition cpw_frustum(cv::Vec2f(0.889484, 0.523599)); // Camera frustum
+        cv::viz::WCameraPosition cpw_frustum(cv::Vec2f(0.5, 0.2)); // Camera frustum
+        vis.showWidget("CPW", cpw, M);
+        vis.showWidget("CPW_FRUSTUM", cpw_frustum, M);
+
         vis.setWidgetPose ( "Camera", M );
         vis.spinOnce ( 1, false );
         cout<<endl;

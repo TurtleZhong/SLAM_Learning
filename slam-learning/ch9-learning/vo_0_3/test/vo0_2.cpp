@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
          << CV_SUBMINOR_VERSION
          << endl;
 
-    Config::setParameterFile("/home/m/work/slam-learning/ch9-learning/vo_0_1/config/default.yaml");
+    Config::setParameterFile("/home/m/work/slam-learning/ch9-learning/vo_0_2/config/default.yaml");
 
     myslam::VisualOdometry::Ptr vo ( new myslam::VisualOdometry );
 

@@ -14,17 +14,23 @@ namespace myslam
 {
 
 VisualOdometry::VisualOdometry() :
-    state_ ( INITIALIZING ), ref_ ( nullptr ), curr_ ( nullptr ), map_ ( new Map ), num_lost_ ( 0 ), num_inliers_ ( 0 ), matcher_flann_ ( new cv::flann::LshIndexParams ( 5,10,2 ) )
+    state_ ( INITIALIZING ),
+    ref_ ( nullptr ),
+    curr_ ( nullptr ),
+    map_ ( new Map ),
+    num_lost_ ( 0 ),
+    num_inliers_ ( 0 ),
+    matcher_flann_ ( new cv::flann::LshIndexParams ( 5,10,2 ) )
 {
-    num_of_features_    = Config::get<int> ( "number_of_features" );
-    scale_factor_       = Config::get<double> ( "scale_factor" );
-    level_pyramid_      = Config::get<int> ( "level_pyramid" );
-    match_ratio_        = Config::get<float> ( "match_ratio" );
-    max_num_lost_       = Config::get<float> ( "max_num_lost" );
-    min_inliers_        = Config::get<int> ( "min_inliers" );
-    key_frame_min_rot   = Config::get<double> ( "keyframe_rotation" );
-    key_frame_min_trans = Config::get<double> ( "keyframe_translation" );
-    map_point_erase_ratio_ = Config::get<double> ( "map_point_erase_ratio" );
+    num_of_features_         = Config::get<int> ( "number_of_features" );
+    scale_factor_            = Config::get<double> ( "scale_factor" );
+    level_pyramid_           = Config::get<int> ( "level_pyramid" );
+    match_ratio_             = Config::get<float> ( "match_ratio" );
+    max_num_lost_            = Config::get<float> ( "max_num_lost" );
+    min_inliers_             = Config::get<int> ( "min_inliers" );
+    key_frame_min_rot        = Config::get<double> ( "keyframe_rotation" );
+    key_frame_min_trans      = Config::get<double> ( "keyframe_translation" );
+    map_point_erase_ratio_   = Config::get<double> ( "map_point_erase_ratio" );
     orb_ = cv::ORB::create ( num_of_features_, scale_factor_, level_pyramid_ );
 }
 
