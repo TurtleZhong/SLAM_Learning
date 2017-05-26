@@ -5,7 +5,7 @@ using namespace myslam;
 void EdgeSE3ProjectDirect::computeError()
 {
     const VertexSE3Expmap* v  =static_cast<const VertexSE3Expmap*> ( _vertices[0] );
-    Eigen::Vector3d x_local = v->estimate().map ( x_world_ );
+    Eigen::Vector3d x_local = v->estimate().map ( p_world_ );
     float x = x_local[0]*camera_->fx_/x_local[2] + camera_->cx_;
     float y = x_local[1]*camera_->fy_/x_local[2] + camera_->cy_;
     // check x,y is in the image
@@ -16,7 +16,7 @@ void EdgeSE3ProjectDirect::computeError()
     }
     else
     {
-        _error ( 0,0 ) = getPixelValue ( x,y ) - _measurement;
+        _error ( 0,0 ) = getPixelValue ( x,y ) - _measurement; /*here must promise the getPixelValue is right*/
     }
 }
 

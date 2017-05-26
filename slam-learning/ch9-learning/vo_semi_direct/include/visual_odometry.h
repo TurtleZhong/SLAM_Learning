@@ -4,6 +4,7 @@
 #include "common_include.h"
 #include "map.h"
 #include <opencv2/features2d/features2d.hpp>
+#include "g2o_direct.h"
 
 namespace myslam
 {
@@ -50,6 +51,9 @@ public:
     double                  key_frame_min_rot;     /*min rotation of two keyframes*/
     double                  key_frame_min_trans;   /*min translation of two keyframes*/
     double                  map_point_erase_ratio_;/*remove map point ratio*/
+    /*direct method members*/
+    vector<Measurement>     measurements_;
+
 
 public:
     VisualOdometry();
@@ -73,6 +77,9 @@ protected:
     void addMapPoints();
     void optimizeMap();
     double getViewAngle( Frame::Ptr frame, MapPoint::Ptr point );
+
+    /*direct methods*/
+    void extractGradiantsPoints();
 
 
 };

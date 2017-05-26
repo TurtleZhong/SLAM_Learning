@@ -10,6 +10,7 @@
 #include "visual_odometry.h"
 #include "g2o_types.h"
 
+
 namespace myslam
 {
 
@@ -350,6 +351,30 @@ double VisualOdometry::getViewAngle ( Frame::Ptr frame, MapPoint::Ptr point )
     Vector3d n = point->pos_ - frame->getCamCenter();
     n.normalize();
     return acos( n.transpose()*point->norm_ );
+}
+
+void VisualOdometry::extractGradiantsPoints()
+{
+    Mat gray;
+    cv::cvtColor ( curr_->color_, gray, cv::COLOR_BGR2GRAY );
+    // select the pixels with high gradiants
+    for ( int x=10; x<curr_->color_.cols-10; x++ )
+        for ( int y=10; y<curr_->color_.rows-10; y++ )
+        {
+            Eigen::Vector2d delta (
+                gray.ptr<uchar>(y)[x+1] - gray.ptr<uchar>(y)[x-1],
+                gray.ptr<uchar>(y+1)[x] - gray.ptr<uchar>(y-1)[x]
+            );
+            if ( delta.norm() < 50 )
+                continue;
+            ushort d = depth.ptr<ushort> (y)[x];
+            if ( d==0 )
+                continue;
+            //Eigen::Vector3d p3d = project2Dto3D ( x, y, d, fx, fy, cx, cy, depth_scale );
+            Eigen::Vector3d p3d = curr_->camera_->pixel2camera(Vector2d(x,y), d);
+            float grayscale = float ( gray.ptr<uchar> (y) [x] );
+            measurements_.push_back ( Measurement ( p3d, grayscale ) );
+        }
 }
 
 

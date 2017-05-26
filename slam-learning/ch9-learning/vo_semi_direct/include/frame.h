@@ -14,7 +14,7 @@ public:
     double                           time_stamp_;     // when it is recorded
     SE3                              T_c_w_;          // transform from world to camera
     Camera::Ptr                      camera_;         // Pinhole RGBD camera model (for deteil please see camera.h)
-    Mat                              color_, depth_;  // color and depth image (640*480)
+    Mat                              color_, gray_, depth_;  // color and depth image (640*480)
     vector<cv::KeyPoint>             kp;
 
 public:
@@ -25,6 +25,7 @@ public:
           SE3 T_c_w = SE3(),
           Camera::Ptr camera = nullptr,
           Mat color = Mat(),
+
           Mat depth = Mat()
             );
     ~Frame();

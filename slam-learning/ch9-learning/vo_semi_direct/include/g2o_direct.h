@@ -22,6 +22,15 @@ using namespace g2o;
 namespace myslam
 {
 
+// 一次测量的值，包括一个世界坐标系下三维点与一个灰度值
+struct Measurement
+{
+    Measurement ( Eigen::Vector3d p, float g ) : pos_world ( p ), grayscale ( g ) {}
+    Eigen::Vector3d pos_world;
+    float grayscale;
+};
+
+
 class EdgeSE3ProjectDirect: public BaseUnaryEdge<1, double, VertexSE3Expmap>
 {
 public:
