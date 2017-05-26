@@ -9,6 +9,7 @@
 #include "config.h"
 #include "visual_odometry.h"
 #include "g2o_types.h"
+#include "g2o_direct.h"
 
 
 namespace myslam
@@ -130,8 +131,8 @@ void VisualOdometry::featureMatching()
     matcher_flann_.match ( desp_map, descriptors_curr_, matches );
     // select the best matches
     float min_dis = std::min_element (
-                        matches.begin(), matches.end(),
-                        [] ( const cv::DMatch& m1, const cv::DMatch& m2 )
+                matches.begin(), matches.end(),
+                [] ( const cv::DMatch& m1, const cv::DMatch& m2 )
     {
         return m1.distance < m2.distance;
     } )->distance;
@@ -169,15 +170,15 @@ void VisualOdometry::poseEstimationPnP()
               ref_->camera_->fx_, 0, ref_->camera_->cx_,
               0, ref_->camera_->fy_, ref_->camera_->cy_,
               0,0,1
-            );
+              );
     Mat rvec, tvec, inliers;
     cv::solvePnPRansac ( pts3d, pts2d, K, Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers );
     num_inliers_ = inliers.rows;
     cout<<"pnp inliers: "<<num_inliers_<<endl;
     T_c_w_estimated_ = SE3 (
-                           SO3 ( rvec.at<double> ( 0,0 ), rvec.at<double> ( 1,0 ), rvec.at<double> ( 2,0 ) ),
-                           Vector3d ( tvec.at<double> ( 0,0 ), tvec.at<double> ( 1,0 ), tvec.at<double> ( 2,0 ) )
-                       );
+                SO3 ( rvec.at<double> ( 0,0 ), rvec.at<double> ( 1,0 ), rvec.at<double> ( 2,0 ) ),
+                Vector3d ( tvec.at<double> ( 0,0 ), tvec.at<double> ( 1,0 ), tvec.at<double> ( 2,0 ) )
+                );
 
     // using bundle adjustment to optimize the pose
     typedef g2o::BlockSolver<g2o::BlockSolverTraits<6,2>> Block;
@@ -190,8 +191,8 @@ void VisualOdometry::poseEstimationPnP()
     g2o::VertexSE3Expmap* pose = new g2o::VertexSE3Expmap();
     pose->setId ( 0 );
     pose->setEstimate ( g2o::SE3Quat (
-        T_c_w_estimated_.rotation_matrix(), T_c_w_estimated_.translation()
-    ));
+                            T_c_w_estimated_.rotation_matrix(), T_c_w_estimated_.translation()
+                            ));
     optimizer.addVertex ( pose );
 
     // edges
@@ -215,9 +216,9 @@ void VisualOdometry::poseEstimationPnP()
     optimizer.optimize ( 10 );
 
     T_c_w_estimated_ = SE3 (
-        pose->estimate().rotation(),
-        pose->estimate().translation()
-    );
+                pose->estimate().rotation(),
+                pose->estimate().translation()
+                );
 
     cout<<"T_c_w_estimated_: "<<endl<<T_c_w_estimated_.matrix()<<endl;
 }
@@ -263,13 +264,13 @@ void VisualOdometry::addKeyFrame()
             if ( d < 0 )
                 continue;
             Vector3d p_world = ref_->camera_->pixel2world (
-                Vector2d ( keypoints_curr_[i].pt.x, keypoints_curr_[i].pt.y ), curr_->T_c_w_, d
-            );
+                        Vector2d ( keypoints_curr_[i].pt.x, keypoints_curr_[i].pt.y ), curr_->T_c_w_, d
+                        );
             Vector3d n = p_world - ref_->getCamCenter();
             n.normalize();
             MapPoint::Ptr map_point = MapPoint::createMapPoint(
-                p_world, n, descriptors_curr_.row(i).clone(), curr_.get()
-            );
+                        p_world, n, descriptors_curr_.row(i).clone(), curr_.get()
+                        );
             map_->insertMapPoint( map_point );
         }
     }
@@ -292,14 +293,14 @@ void VisualOdometry::addMapPoints()
         if ( d<0 )
             continue;
         Vector3d p_world = ref_->camera_->pixel2world (
-            Vector2d ( keypoints_curr_[i].pt.x, keypoints_curr_[i].pt.y ),
-            curr_->T_c_w_, d
-        );
+                    Vector2d ( keypoints_curr_[i].pt.x, keypoints_curr_[i].pt.y ),
+                    curr_->T_c_w_, d
+                    );
         Vector3d n = p_world - ref_->getCamCenter();
         n.normalize();
         MapPoint::Ptr map_point = MapPoint::createMapPoint(
-            p_world, n, descriptors_curr_.row(i).clone(), curr_.get()
-        );
+                    p_world, n, descriptors_curr_.row(i).clone(), curr_.get()
+                    );
         map_->insertMapPoint( map_point );
     }
 }
@@ -362,12 +363,12 @@ void VisualOdometry::extractGradiantsPoints()
         for ( int y=10; y<curr_->color_.rows-10; y++ )
         {
             Eigen::Vector2d delta (
-                gray.ptr<uchar>(y)[x+1] - gray.ptr<uchar>(y)[x-1],
-                gray.ptr<uchar>(y+1)[x] - gray.ptr<uchar>(y-1)[x]
-            );
+                        gray.ptr<uchar>(y)[x+1] - gray.ptr<uchar>(y)[x-1],
+                    gray.ptr<uchar>(y+1)[x] - gray.ptr<uchar>(y-1)[x]
+                    );
             if ( delta.norm() < 50 )
                 continue;
-            ushort d = depth.ptr<ushort> (y)[x];
+            ushort d = curr_->depth_.ptr<ushort> (y)[x];
             if ( d==0 )
                 continue;
             //Eigen::Vector3d p3d = project2Dto3D ( x, y, d, fx, fy, cx, cy, depth_scale );
@@ -375,6 +376,48 @@ void VisualOdometry::extractGradiantsPoints()
             float grayscale = float ( gray.ptr<uchar> (y) [x] );
             measurements_.push_back ( Measurement ( p3d, grayscale ) );
         }
+}
+
+void VisualOdometry::poseEstimationDirect()
+{
+    // 初始化g2o
+    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6,1>> DirectBlock;  // 求解的向量是6＊1的
+    DirectBlock::LinearSolverType* linearSolver = new g2o::LinearSolverDense< DirectBlock::PoseMatrixType > ();
+    DirectBlock* solver_ptr = new DirectBlock ( linearSolver );
+    // g2o::OptimizationAlgorithmGaussNewton* solver = new g2o::OptimizationAlgorithmGaussNewton( solver_ptr ); // G-N
+    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg ( solver_ptr ); // L-M
+    g2o::SparseOptimizer optimizer;
+    optimizer.setAlgorithm ( solver );
+    optimizer.setVerbose( true );
+
+    g2o::VertexSE3Expmap* pose = new g2o::VertexSE3Expmap();
+    pose->setEstimate ( g2o::SE3Quat ( T_c_w_estimated_.rotation_matrix(), T_c_w_estimated_.translation() ) );
+    pose->setId ( 0 );
+    optimizer.addVertex ( pose );
+
+    // 添加边
+    int id=1;
+    for ( Measurement m: measurements_ )
+    {
+        EdgeSE3ProjectDirect* edge = new EdgeSE3ProjectDirect (
+                    m.pos_world,
+                    curr_->camera_.get(),
+                    curr_.get()
+                    );
+        edge->setVertex ( 0, pose );
+        edge->setMeasurement ( m.grayscale );
+        edge->setInformation ( Eigen::Matrix<double,1,1>::Identity() );
+        edge->setId ( id++ );
+        optimizer.addEdge ( edge );
+    }
+    cout<<"edges in graph: "<<optimizer.edges().size() <<endl;
+    optimizer.initializeOptimization();
+    optimizer.optimize ( 30 );
+    T_c_w_estimated_ = SE3 (
+                pose->estimate().rotation(),
+                pose->estimate().translation()
+                );
+    cout<<"T_c_w_estimated_: "<<endl<<T_c_w_estimated_.matrix()<<endl;
 }
 
 

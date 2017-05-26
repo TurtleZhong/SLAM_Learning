@@ -35,26 +35,26 @@ void EdgeSE3ProjectDirect::linearizeOplus()
     double invz = 1.0/xyz_trans[2];
     double invz_2 = invz*invz;
 
-    float u = x*fx_*invz + cx_;
-    float v = y*fy_*invz + cy_;
+    float u = x*camera_->fx_*invz + camera_->cx_;
+    float v = y*camera_->fy_*invz + camera_->cy_;
 
     // jacobian from se3 to u,v
     // NOTE that in g2o the Lie algebra is (\omega, \epsilon), where \omega is so(3) and \epsilon the translation
     Eigen::Matrix<double, 2, 6> jacobian_uv_ksai;
 
-    jacobian_uv_ksai ( 0,0 ) = - x*y*invz_2 *fx_;
-    jacobian_uv_ksai ( 0,1 ) = ( 1+ ( x*x*invz_2 ) ) *fx_;
-    jacobian_uv_ksai ( 0,2 ) = - y*invz *fx_;
-    jacobian_uv_ksai ( 0,3 ) = invz *fx_;
+    jacobian_uv_ksai ( 0,0 ) = - x*y*invz_2 *camera_->fx_;
+    jacobian_uv_ksai ( 0,1 ) = ( 1+ ( x*x*invz_2 ) ) *camera_->fx_;
+    jacobian_uv_ksai ( 0,2 ) = - y*invz *camera_->fx_;
+    jacobian_uv_ksai ( 0,3 ) = invz *camera_->fx_;
     jacobian_uv_ksai ( 0,4 ) = 0;
-    jacobian_uv_ksai ( 0,5 ) = -x*invz_2 *fx_;
+    jacobian_uv_ksai ( 0,5 ) = -x*invz_2 *camera_->fx_;
 
-    jacobian_uv_ksai ( 1,0 ) = - ( 1+y*y*invz_2 ) *fy_;
-    jacobian_uv_ksai ( 1,1 ) = x*y*invz_2 *fy_;
-    jacobian_uv_ksai ( 1,2 ) = x*invz *fy_;
+    jacobian_uv_ksai ( 1,0 ) = - ( 1+y*y*invz_2 ) *camera_->fy_;
+    jacobian_uv_ksai ( 1,1 ) = x*y*invz_2 *camera_->fy_;
+    jacobian_uv_ksai ( 1,2 ) = x*invz *camera_->fy_;
     jacobian_uv_ksai ( 1,3 ) = 0;
-    jacobian_uv_ksai ( 1,4 ) = invz *fy_;
-    jacobian_uv_ksai ( 1,5 ) = -y*invz_2 *fy_;
+    jacobian_uv_ksai ( 1,4 ) = invz *camera_->fy_;
+    jacobian_uv_ksai ( 1,5 ) = -y*invz_2 *camera_->fy_;
 
     Eigen::Matrix<double, 1, 2> jacobian_pixel_uv;
 

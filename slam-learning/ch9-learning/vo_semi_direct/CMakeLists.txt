@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED( VERSION 2.8 )
 set(CMAKE_PREFIX_PATH "/usr/local/opencv3/share/OpenCV")
-PROJECT( vo_0_3 )
+PROJECT( vo_direct )
 
 set(OpenCV_DIR "/usr/local/opencv3")
 find_package(OpenCV REQUIRED)
@@ -34,13 +34,13 @@ include_directories( ${G2O_INCLUDE_DIRS} )
 set( THIRD_PARTY_LIBS 
     ${OpenCV_LIBS}
     ${Sophus_LIBRARIES}
-    g2o_core g2o_stuff g2o_types_sba
+    g2o_core g2o_stuff g2o_types_sba g2o_solver_csparse g2o_csparse_extension
 )
 
 set( THIRD_PARTY_LIBS 
     ${OpenCV_LIBS}
     ${Sophus_LIBRARIES}
-    g2o_core g2o_stuff g2o_types_sba
+    g2o_core g2o_stuff g2o_types_sba g2o_solver_csparse g2o_csparse_extension
 )
 
 

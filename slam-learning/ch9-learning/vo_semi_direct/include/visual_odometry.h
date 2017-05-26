@@ -80,6 +80,7 @@ protected:
 
     /*direct methods*/
     void extractGradiantsPoints();
+    void poseEstimationDirect();
 
 
 };

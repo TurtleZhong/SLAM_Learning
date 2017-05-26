@@ -56,7 +56,7 @@ protected:
     // get a gray scale value from reference image (bilinear interpolated双线性插值)
     inline float getPixelValue ( float x, float y )
     {
-        uchar data =  frame_->color_.data[ int ( y ) * frame_->color_.step + int ( x ) ];
+        uchar *data =  & frame_->color_.data[ int ( y ) * frame_->color_.step + int ( x ) ];
         float xx = x - floor ( x );
         float yy = y - floor ( y );
         return float (
