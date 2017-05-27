@@ -112,41 +112,50 @@ bool VisualOdometry::addFrame(Frame::Ptr frame, string Method)
         curr_ = ref_ = frame;
         // extract features from first frame and add them into map
         extractGradiantsPoints();
-        //addKeyFrame();      // the first frame is a key-frame
+        addKeyFrame();      // the first frame is a key-frame
         break;
     }
     case OK:
     {
         curr_ = frame;
-//        cv::imshow("test", curr_->gray_);
-//        cv::waitKey(0);
-//        curr_->T_c_w_ = ref_->T_c_w_;
-//        extractKeyPoints();
-//        computeDescriptors();
-//        featureMatching();
+        //        cv::imshow("test", curr_->gray_);
+        //        cv::waitKey(0);
+        //        curr_->T_c_w_ = ref_->T_c_w_;
+        //        extractKeyPoints();
+        //        computeDescriptors();
+        //        featureMatching();
         //extractGradiantsPoints();
         poseEstimationDirect();
-//        curr_->T_c_w_ = T_c_w_estimated_;
+        curr_->T_c_w_ = T_c_w_estimated_;
+        if ( checkKeyFrame() == true ) // is a key-frame
+        {
+            cout << "/*************add a keyframe!************/" << endl;
+            addKeyFrame();
+            measurements_.clear();  /*we need to clear the measurement points cuz update the key-frame*/
+            extractGradiantsPoints(); /*cuz update the keyframe so we need to update the gradiants points*/
 
-//        if ( checkEstimatedPose() == true ) // a good estimation
-//        {
-//            curr_->T_c_w_ = T_c_w_estimated_;
-//            optimizeMap();
-//            num_lost_ = 0;
-//            if ( checkKeyFrame() == true ) // is a key-frame
-//            {
-//                addKeyFrame();
-//            }
-//        }
-//        else // bad estimation due to various reasons
-//        {
-//            num_lost_++;
-//            if ( num_lost_ > max_num_lost_ )
-//            {
-//                state_ = LOST;
-//            }
-//            return false;
-//        }
+        }
+        //        curr_->T_c_w_ = T_c_w_estimated_;
+
+        //        if ( checkEstimatedPose() == true ) // a good estimation
+        //        {
+        //            curr_->T_c_w_ = T_c_w_estimated_;
+        //            optimizeMap();
+        //            num_lost_ = 0;
+        //            if ( checkKeyFrame() == true ) // is a key-frame
+        //            {
+        //                addKeyFrame();
+        //            }
+        //        }
+        //        else // bad estimation due to various reasons
+        //        {
+        //            num_lost_++;
+        //            if ( num_lost_ > max_num_lost_ )
+        //            {
+        //                state_ = LOST;
+        //            }
+        //            return false;
+        //        }
         break;
     }
     case LOST:
@@ -309,6 +318,7 @@ bool VisualOdometry::checkEstimatedPose()
 
 bool VisualOdometry::checkKeyFrame()
 {
+    cout << "ref_->T_c_w_ = "<< endl <<  ref_->T_c_w_.matrix()<< endl;
     SE3 T_r_c = ref_->T_c_w_ * T_c_w_estimated_.inverse();
     Sophus::Vector6d d = T_r_c.log();
     Vector3d trans = d.head<3>();
@@ -320,28 +330,29 @@ bool VisualOdometry::checkKeyFrame()
 
 void VisualOdometry::addKeyFrame()
 {
-    if ( map_->keyframes_.empty() )
-    {
-        // first key-frame, add all 3d points into map
-        for ( size_t i=0; i<keypoints_curr_.size(); i++ )
-        {
-            double d = curr_->findDepth ( keypoints_curr_[i] );
-            if ( d < 0 )
-                continue;
-            Vector3d p_world = ref_->camera_->pixel2world (
-                        Vector2d ( keypoints_curr_[i].pt.x, keypoints_curr_[i].pt.y ), curr_->T_c_w_, d
-                        );
-            Vector3d n = p_world - ref_->getCamCenter();
-            n.normalize();
-            MapPoint::Ptr map_point = MapPoint::createMapPoint(
-                        p_world, n, descriptors_curr_.row(i).clone(), curr_.get()
-                        );
-            map_->insertMapPoint( map_point );
-        }
-    }
+//    if ( map_->keyframes_.empty() )
+//    {
+//        // first key-frame, add all 3d points into map
+//        for ( size_t i=0; i<keypoints_curr_.size(); i++ )
+//        {
+//            double d = curr_->findDepth ( keypoints_curr_[i] );
+//            if ( d < 0 )
+//                continue;
+//            Vector3d p_world = ref_->camera_->pixel2world (
+//                        Vector2d ( keypoints_curr_[i].pt.x, keypoints_curr_[i].pt.y ), curr_->T_c_w_, d
+//                        );
+//            Vector3d n = p_world - ref_->getCamCenter();
+//            n.normalize();
+//            MapPoint::Ptr map_point = MapPoint::createMapPoint(
+//                        p_world, n, descriptors_curr_.row(i).clone(), curr_.get()
+//                        );
+//            map_->insertMapPoint( map_point );
+//        }
+//    }
 
     map_->insertKeyFrame ( curr_ );
     ref_ = curr_;
+
 }
 
 void VisualOdometry::addMapPoints()
@@ -432,7 +443,7 @@ void VisualOdometry::extractGradiantsPoints()
                         gray.ptr<uchar>(y)[x+1] - gray.ptr<uchar>(y)[x-1],
                     gray.ptr<uchar>(y+1)[x] - gray.ptr<uchar>(y-1)[x]
                     );
-            if ( delta.norm() < 50 )
+            if ( delta.norm() < 85 )
                 continue;
             ushort d = curr_->depth_.ptr<ushort> (y)[x];
             if ( d==0 )
@@ -450,8 +461,8 @@ void VisualOdometry::extractGradiantsPoints()
 void VisualOdometry::poseEstimationDirect()
 {
     Frame tmp = *curr_; /*5.27 by zhong*/
-//    cv::imshow("tmp", tmp.color_);
-//    cv::waitKey(0);
+    //    cv::imshow("tmp", tmp.color_);
+    //    cv::waitKey(0);
     // 初始化g2o
     typedef g2o::BlockSolver<g2o::BlockSolverTraits<6,1>> DirectBlock;  // 求解的向量是6＊1的
     DirectBlock::LinearSolverType* linearSolver = new g2o::LinearSolverDense< DirectBlock::PoseMatrixType > ();
@@ -460,7 +471,7 @@ void VisualOdometry::poseEstimationDirect()
     g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg ( solver_ptr ); // L-M
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm ( solver );
-    optimizer.setVerbose( true );
+    optimizer.setVerbose( false ); /*debug information*/
 
     g2o::VertexSE3Expmap* pose = new g2o::VertexSE3Expmap();
     pose->setEstimate ( g2o::SE3Quat ( T_c_w_estimated_.rotation_matrix(), T_c_w_estimated_.translation() ) );
@@ -481,14 +492,47 @@ void VisualOdometry::poseEstimationDirect()
         edge->setId ( id++ );
         optimizer.addEdge ( edge );
     }
-    cout<<"edges in graph: "<<optimizer.edges().size() <<endl;
+    //cout<<"edges in graph: "<<optimizer.edges().size() <<endl;
     optimizer.initializeOptimization();
-    optimizer.optimize ( 30 );
+    optimizer.optimize ( 15 );
     T_c_w_estimated_ = SE3 (
                 pose->estimate().rotation(),
                 pose->estimate().translation()
                 );
     cout<<"T_c_w_estimated_: "<<endl<<T_c_w_estimated_.matrix()<<endl;
+
+    // plot the feature points
+    cv::Mat img_show ( curr_->color_.rows*2, curr_->color_.cols, CV_8UC3 );
+    ref_->color_.copyTo ( img_show ( cv::Rect ( 0,0,curr_->color_.cols, curr_->color_.rows ) ) );
+    curr_->color_.copyTo ( img_show ( cv::Rect ( 0,curr_->color_.rows,curr_->color_.cols, curr_->color_.rows ) ) );
+    for ( Measurement m:measurements_ )
+    {
+        if ( rand() > RAND_MAX/5 )
+            continue;
+        Eigen::Vector3d p = m.pos_world;
+        //Eigen::Vector2d pixel_prev = project3Dto2D ( p ( 0,0 ), p ( 1,0 ), p ( 2,0 ), fx, fy, cx, cy );
+        Eigen::Vector2d pixel_prev = curr_->camera_->camera2pixel(p);
+        Eigen::Vector3d p2 = T_c_w_estimated_*m.pos_world;
+        //Eigen::Vector2d pixel_now = project3Dto2D ( p2 ( 0,0 ), p2 ( 1,0 ), p2 ( 2,0 ), fx, fy, cx, cy );
+        Eigen::Vector2d pixel_now = curr_->camera_->camera2pixel(p2);
+        if ( pixel_now(0,0)<0 || pixel_now(0,0)>=curr_->color_.cols || pixel_now(1,0)<0 || pixel_now(1,0)>=curr_->color_.rows )
+            continue;
+
+        float b = 0;
+        float g = 250;
+        float r = 0;
+        img_show.ptr<uchar>( pixel_prev(1,0) )[int(pixel_prev(0,0))*3] = b;
+        img_show.ptr<uchar>( pixel_prev(1,0) )[int(pixel_prev(0,0))*3+1] = g;
+        img_show.ptr<uchar>( pixel_prev(1,0) )[int(pixel_prev(0,0))*3+2] = r;
+
+        img_show.ptr<uchar>( pixel_now(1,0)+curr_->color_.rows )[int(pixel_now(0,0))*3] = b;
+        img_show.ptr<uchar>( pixel_now(1,0)+curr_->color_.rows )[int(pixel_now(0,0))*3+1] = g;
+        img_show.ptr<uchar>( pixel_now(1,0)+curr_->color_.rows )[int(pixel_now(0,0))*3+2] = r;
+        cv::circle ( img_show, cv::Point2d ( pixel_prev ( 0,0 ), pixel_prev ( 1,0 ) ), 4, cv::Scalar ( b,g,r ), 2 );
+        cv::circle ( img_show, cv::Point2d ( pixel_now ( 0,0 ), pixel_now ( 1,0 ) +curr_->color_.rows ), 4, cv::Scalar ( b,g,r ), 2 );
+    }
+    cv::imshow ( "result", img_show );
+    //cv::waitKey ( 27 );
 }
 
 
