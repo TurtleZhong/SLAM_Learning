@@ -38,8 +38,8 @@ public:
 
     EdgeSE3ProjectDirect() {}
 
-    EdgeSE3ProjectDirect ( Eigen::Vector3d p_world, Camera* camera, Frame* frame  )
-        : p_world_ ( p_world ), camera_(camera), frame_( frame )
+    EdgeSE3ProjectDirect ( Eigen::Vector3d p_world, Frame frame  )
+        : p_world_ ( p_world ),  frame_( frame )
     {}
 
     virtual void computeError();
@@ -49,21 +49,21 @@ public:
     virtual bool write(std::ostream& os) const {}
 
     Eigen::Vector3d    p_world_;  /*word points*/
-    Camera*            camera_;   /*params of camera*/
-    Frame::Ptr         frame_;    /*gray and depth*/
+    //Camera::Ptr        camera_;   /*params of camera*/
+    Frame              frame_;    /*gray and depth*/
 
 protected:
     // get a gray scale value from reference image (bilinear interpolated双线性插值)
     inline float getPixelValue ( float x, float y )
     {
-        uchar *data =  & frame_->color_.data[ int ( y ) * frame_->color_.step + int ( x ) ];
+        uchar *data =  & frame_.gray_.data[ int ( y ) * frame_.gray_.step + int ( x ) ];
         float xx = x - floor ( x );
         float yy = y - floor ( y );
         return float (
                     ( 1-xx ) * ( 1-yy ) * data[0] +
                 xx* ( 1-yy ) * data[1] +
-                ( 1-xx ) *yy*data[ frame_->color_.step ] +
-                xx*yy*data[frame_->color_.step+1]
+                ( 1-xx ) *yy*data[ frame_.gray_.step ] +
+                xx*yy*data[frame_.gray_.step+1]
                 );
     }
 

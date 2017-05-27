@@ -94,6 +94,71 @@ bool VisualOdometry::addFrame ( Frame::Ptr frame )
     return true;
 }
 
+/*
+ * Direct Method
+ *
+ */
+bool VisualOdometry::addFrame(Frame::Ptr frame, string Method)
+{
+    /*
+     * Direct Method
+     *
+     */
+    switch ( state_ )
+    {
+    case INITIALIZING:
+    {
+        state_ = OK;
+        curr_ = ref_ = frame;
+        // extract features from first frame and add them into map
+        extractGradiantsPoints();
+        //addKeyFrame();      // the first frame is a key-frame
+        break;
+    }
+    case OK:
+    {
+        curr_ = frame;
+//        cv::imshow("test", curr_->gray_);
+//        cv::waitKey(0);
+//        curr_->T_c_w_ = ref_->T_c_w_;
+//        extractKeyPoints();
+//        computeDescriptors();
+//        featureMatching();
+        //extractGradiantsPoints();
+        poseEstimationDirect();
+//        curr_->T_c_w_ = T_c_w_estimated_;
+
+//        if ( checkEstimatedPose() == true ) // a good estimation
+//        {
+//            curr_->T_c_w_ = T_c_w_estimated_;
+//            optimizeMap();
+//            num_lost_ = 0;
+//            if ( checkKeyFrame() == true ) // is a key-frame
+//            {
+//                addKeyFrame();
+//            }
+//        }
+//        else // bad estimation due to various reasons
+//        {
+//            num_lost_++;
+//            if ( num_lost_ > max_num_lost_ )
+//            {
+//                state_ = LOST;
+//            }
+//            return false;
+//        }
+        break;
+    }
+    case LOST:
+    {
+        cout<<"vo has lost."<<endl;
+        break;
+    }
+    }
+
+    return true;
+}
+
 void VisualOdometry::extractKeyPoints()
 {
     boost::timer timer;
@@ -360,6 +425,7 @@ void VisualOdometry::extractGradiantsPoints()
     cv::cvtColor ( curr_->color_, gray, cv::COLOR_BGR2GRAY );
     // select the pixels with high gradiants
     for ( int x=10; x<curr_->color_.cols-10; x++ )
+    {
         for ( int y=10; y<curr_->color_.rows-10; y++ )
         {
             Eigen::Vector2d delta (
@@ -373,13 +439,19 @@ void VisualOdometry::extractGradiantsPoints()
                 continue;
             //Eigen::Vector3d p3d = project2Dto3D ( x, y, d, fx, fy, cx, cy, depth_scale );
             Eigen::Vector3d p3d = curr_->camera_->pixel2camera(Vector2d(x,y), d);
+            //cout << "p3d_points = " << p3d << endl;
             float grayscale = float ( gray.ptr<uchar> (y) [x] );
             measurements_.push_back ( Measurement ( p3d, grayscale ) );
         }
+    }
+    cout << "gradiantsPoints size is " << measurements_.size() << endl;
 }
 
 void VisualOdometry::poseEstimationDirect()
 {
+    Frame tmp = *curr_; /*5.27 by zhong*/
+//    cv::imshow("tmp", tmp.color_);
+//    cv::waitKey(0);
     // 初始化g2o
     typedef g2o::BlockSolver<g2o::BlockSolverTraits<6,1>> DirectBlock;  // 求解的向量是6＊1的
     DirectBlock::LinearSolverType* linearSolver = new g2o::LinearSolverDense< DirectBlock::PoseMatrixType > ();
@@ -401,8 +473,7 @@ void VisualOdometry::poseEstimationDirect()
     {
         EdgeSE3ProjectDirect* edge = new EdgeSE3ProjectDirect (
                     m.pos_world,
-                    curr_->camera_.get(),
-                    curr_.get()
+                    tmp
                     );
         edge->setVertex ( 0, pose );
         edge->setMeasurement ( m.grayscale );

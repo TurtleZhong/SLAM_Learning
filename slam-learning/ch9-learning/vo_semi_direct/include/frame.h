@@ -25,7 +25,6 @@ public:
           SE3 T_c_w = SE3(),
           Camera::Ptr camera = nullptr,
           Mat color = Mat(),
-
           Mat depth = Mat()
             );
     ~Frame();
@@ -34,6 +33,8 @@ public:
 
     /*find depth in depth image*/
     double findDepth( const cv::KeyPoint& kp  );
+
+    float findDepth(float x, float y);
 
     /*get the camera center*/
     Vector3d getCamCenter() const;

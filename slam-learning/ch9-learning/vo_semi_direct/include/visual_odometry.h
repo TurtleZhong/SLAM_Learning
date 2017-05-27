@@ -60,6 +60,7 @@ public:
     ~VisualOdometry();
 
     bool addFrame( Frame::Ptr frame );
+    bool addFrame(Frame::Ptr frame, string Method);
 
     /*functions are below*/
 protected:

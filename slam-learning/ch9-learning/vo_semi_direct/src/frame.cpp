@@ -10,7 +10,9 @@ Frame::Frame() : id_(-1), time_stamp_(-1), camera_(nullptr)
 Frame::Frame(long id, double time_stamp, Sophus::SE3 T_c_w, Camera::Ptr camera, cv::Mat color, cv::Mat depth)
     : id_(id), time_stamp_(time_stamp), T_c_w_(T_c_w), camera_(camera), color_(color), depth_(depth)
 {
-
+    /*can't use this because the Mat is null*/
+//    Mat tmp = this->color_.clone();
+//    cv::cvtColor(tmp,this->gray_, cv::COLOR_BGR2GRAY);
 }
 
 Frame::~Frame()
@@ -55,6 +57,23 @@ double Frame::findDepth(const cv::KeyPoint &kp)
     }
 
     return -1;
+}
+
+
+
+float Frame::findDepth(float x, float y)
+{
+    // get a gray scale value from reference image (bilinear interpolated双线性插值)
+        uchar *data =  & gray_.data[ int ( y ) * gray_.step + int ( x ) ];
+        float xx = x - floor ( x );
+        float yy = y - floor ( y );
+        return float (
+                    ( 1-xx ) * ( 1-yy ) * data[0] +
+                xx* ( 1-yy ) * data[1] +
+                ( 1-xx ) *yy*data[ gray_.step ] +
+                xx*yy*data[gray_.step+1]
+                );
+
 }
 
 

@@ -48,12 +48,14 @@ Vector2d Camera::camera2pixel(const Eigen::Vector3d &p_c)
 Vector3d Camera::pixel2camera(const Eigen::Vector2d &p_p, double depth)
 {
     /*
+     * z = d / depth_scale_
      * x = (u - cx)*z / fx
      * v = (v - cy)*z / fy
+     *
     */
     return Vector3d (
-                ( p_p(0,0) - cx_ ) * depth / fx_,
-                ( p_p(1,0) - cy_ ) * depth / fy_,
+                ( p_p(0,0) - cx_ ) * depth / (fx_ * depth_scale_),
+                ( p_p(1,0) - cy_ ) * depth / (fy_ * depth_scale_),
                 depth / depth_scale_    /*add by zhong 5.26*/
                 );
 }
