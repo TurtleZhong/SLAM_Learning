@@ -23,6 +23,8 @@ public:
     int                           matched_times_;  /*being an inliner in pose estimation*/
     int                           visible_times_;  /*being visible in current frame*/
 
+    float                         gray_value_;
+
 
 public:
     MapPoint();
@@ -30,7 +32,7 @@ public:
             const Eigen::Vector3d &position,
             const Eigen::Vector3d &norm,
             Frame* frame = nullptr,
-            const Mat& descriptor_ = Mat()
+            float gray_value = 0.0
             );
 
     inline cv::Point3f getPositionCV() const {
@@ -38,10 +40,9 @@ public:
     }
     static MapPoint::Ptr createMapPoint();
 
-    static MapPoint::Ptr createMapPoint(
-            const Vector3d& pos_world,
+    static MapPoint::Ptr createMapPoint(const Vector3d& pos_world,
             const Vector3d& norm_,
-            const Mat& descriptor_,
+            float gray_value,
             Frame* frame
             );
 

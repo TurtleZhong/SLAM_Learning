@@ -52,7 +52,8 @@ public:
     double                  key_frame_min_trans;   /*min translation of two keyframes*/
     double                  map_point_erase_ratio_;/*remove map point ratio*/
     /*direct method members*/
-    vector<Measurement>     measurements_;
+    vector<Measurement>     measurements_curr_;
+    vector<cv::Point2f>     gradiants_points_curr_;/*x,y*/
 
 
 public:

@@ -25,10 +25,14 @@ namespace myslam
 // 一次测量的值，包括一个世界坐标系下三维点与一个灰度值
 struct Measurement
 {
-    Measurement ( Eigen::Vector3d p, float g ) : pos_world ( p ), grayscale ( g ) {}
+    Measurement ( Eigen::Vector3d p, cv::Point2f g_p, float g ) : pos_world ( p ),gradiant_points(g_p), grayscale ( g ) {}
     Eigen::Vector3d pos_world;
-    float grayscale;
+    cv::Point2f gradiant_points;
+    float       grayscale;
+
 };
+
+
 
 
 class EdgeSE3ProjectDirect: public BaseUnaryEdge<1, double, VertexSE3Expmap>

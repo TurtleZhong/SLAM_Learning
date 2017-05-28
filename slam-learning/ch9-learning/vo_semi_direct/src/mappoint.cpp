@@ -10,8 +10,8 @@ MapPoint::MapPoint()
 }
 
 
-MapPoint::MapPoint ( long id, const Vector3d& position, const Vector3d& norm, Frame* frame, const Mat& descriptor )
-: id_(id), pos_(position), norm_(norm), good_(true), visible_times_(1), matched_times_(1), descriptor_(descriptor)
+MapPoint::MapPoint (long id, const Vector3d& position, const Vector3d& norm, Frame* frame, float gray_value)
+: id_(id), pos_(position), norm_(norm), good_(true), visible_times_(1), matched_times_(1), gray_value_(gray_value)
 {
     observed_frames_.push_back(frame);
 }
@@ -26,12 +26,12 @@ MapPoint::Ptr MapPoint::createMapPoint()
 
 MapPoint::Ptr MapPoint::createMapPoint(const Eigen::Vector3d &pos_world,
                                        const Eigen::Vector3d &norm_,
-                                       const cv::Mat &descriptor_,
+                                       float gray_value,
                                        Frame *frame)
 {
 
     return MapPoint::Ptr(
-                new MapPoint(factory_id_++, pos_world, norm_, frame, descriptor_)
+                new MapPoint(factory_id_++, pos_world, norm_, frame, gray_value)
                 );
 }
 

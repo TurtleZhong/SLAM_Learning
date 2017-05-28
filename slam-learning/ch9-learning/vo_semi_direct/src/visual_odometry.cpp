@@ -118,44 +118,16 @@ bool VisualOdometry::addFrame(Frame::Ptr frame, string Method)
     case OK:
     {
         curr_ = frame;
-        //        cv::imshow("test", curr_->gray_);
-        //        cv::waitKey(0);
-        //        curr_->T_c_w_ = ref_->T_c_w_;
-        //        extractKeyPoints();
-        //        computeDescriptors();
-        //        featureMatching();
-        //extractGradiantsPoints();
         poseEstimationDirect();
         curr_->T_c_w_ = T_c_w_estimated_;
         if ( checkKeyFrame() == true ) // is a key-frame
         {
             cout << "/*************add a keyframe!************/" << endl;
             addKeyFrame();
-            measurements_.clear();  /*we need to clear the measurement points cuz update the key-frame*/
+            measurements_curr_.clear();  /*we need to clear the measurement points cuz update the key-frame*/
             extractGradiantsPoints(); /*cuz update the keyframe so we need to update the gradiants points*/
 
         }
-        //        curr_->T_c_w_ = T_c_w_estimated_;
-
-        //        if ( checkEstimatedPose() == true ) // a good estimation
-        //        {
-        //            curr_->T_c_w_ = T_c_w_estimated_;
-        //            optimizeMap();
-        //            num_lost_ = 0;
-        //            if ( checkKeyFrame() == true ) // is a key-frame
-        //            {
-        //                addKeyFrame();
-        //            }
-        //        }
-        //        else // bad estimation due to various reasons
-        //        {
-        //            num_lost_++;
-        //            if ( num_lost_ > max_num_lost_ )
-        //            {
-        //                state_ = LOST;
-        //            }
-        //            return false;
-        //        }
         break;
     }
     case LOST:
@@ -300,11 +272,6 @@ void VisualOdometry::poseEstimationPnP()
 bool VisualOdometry::checkEstimatedPose()
 {
     // check if the estimated pose is good
-    if ( num_inliers_ < min_inliers_ )
-    {
-        cout<<"reject because inlier is too small: "<<num_inliers_<<endl;
-        return false;
-    }
     // if the motion is too large, it is probably wrong
     SE3 T_r_c = ref_->T_c_w_ * T_c_w_estimated_.inverse();
     Sophus::Vector6d d = T_r_c.log();
@@ -330,52 +297,47 @@ bool VisualOdometry::checkKeyFrame()
 
 void VisualOdometry::addKeyFrame()
 {
-//    if ( map_->keyframes_.empty() )
-//    {
-//        // first key-frame, add all 3d points into map
-//        for ( size_t i=0; i<keypoints_curr_.size(); i++ )
-//        {
-//            double d = curr_->findDepth ( keypoints_curr_[i] );
-//            if ( d < 0 )
-//                continue;
-//            Vector3d p_world = ref_->camera_->pixel2world (
-//                        Vector2d ( keypoints_curr_[i].pt.x, keypoints_curr_[i].pt.y ), curr_->T_c_w_, d
-//                        );
-//            Vector3d n = p_world - ref_->getCamCenter();
-//            n.normalize();
-//            MapPoint::Ptr map_point = MapPoint::createMapPoint(
-//                        p_world, n, descriptors_curr_.row(i).clone(), curr_.get()
-//                        );
-//            map_->insertMapPoint( map_point );
-//        }
-//    }
+    if ( map_->keyframes_.empty() )
+    {
+        // first key-frame, add all 3d points into map
+        for ( int i=0; i<measurements_curr_.size(); i++ )
+        {
+            double d = ref_->findDepth ( measurements_curr_[i].gradiant_points.x, measurements_curr_[i].gradiant_points.y );
+            if ( d<0 )
+                continue;
+            Vector3d p_world = ref_->camera_->pixel2world (
+                        Vector2d ( measurements_curr_[i].gradiant_points.x, measurements_curr_[i].gradiant_points.y ),
+                        curr_->T_c_w_, d
+                        );
+            Vector3d n = p_world - ref_->getCamCenter();
+            n.normalize();
+            MapPoint::Ptr map_point = MapPoint::createMapPoint(
+                        p_world, n, measurements_curr_[i].grayscale, curr_.get()
+                        );
+            map_->insertMapPoint( map_point );
+        }
+    }
 
     map_->insertKeyFrame ( curr_ );
     ref_ = curr_;
-
 }
 
 void VisualOdometry::addMapPoints()
 {
     // add the new map points into map
-    vector<bool> matched(keypoints_curr_.size(), false);
-    for ( int index:match_2dkp_index_ )
-        matched[index] = true;
-    for ( int i=0; i<keypoints_curr_.size(); i++ )
+    for ( int i=0; i<measurements_curr_.size(); i++ )
     {
-        if ( matched[i] == true )
-            continue;
-        double d = ref_->findDepth ( keypoints_curr_[i] );
+        double d = ref_->findDepth ( measurements_curr_[i].gradiant_points.x, measurements_curr_[i].gradiant_points.y );
         if ( d<0 )
             continue;
         Vector3d p_world = ref_->camera_->pixel2world (
-                    Vector2d ( keypoints_curr_[i].pt.x, keypoints_curr_[i].pt.y ),
+                    Vector2d ( measurements_curr_[i].gradiant_points.x, measurements_curr_[i].gradiant_points.y ),
                     curr_->T_c_w_, d
                     );
         Vector3d n = p_world - ref_->getCamCenter();
         n.normalize();
         MapPoint::Ptr map_point = MapPoint::createMapPoint(
-                    p_world, n, descriptors_curr_.row(i).clone(), curr_.get()
+                    p_world, n, measurements_curr_[i].grayscale, curr_.get()
                     );
         map_->insertMapPoint( map_point );
     }
@@ -443,19 +405,22 @@ void VisualOdometry::extractGradiantsPoints()
                         gray.ptr<uchar>(y)[x+1] - gray.ptr<uchar>(y)[x-1],
                     gray.ptr<uchar>(y+1)[x] - gray.ptr<uchar>(y-1)[x]
                     );
-            if ( delta.norm() < 85 )
+            if ( delta.norm() < 75 )
                 continue;
             ushort d = curr_->depth_.ptr<ushort> (y)[x];
             if ( d==0 )
                 continue;
+            if ( double(d/curr_->camera_->depth_scale_) > 6.0)
+                continue; /*cuz the depth is too large so we can't use it*/
             //Eigen::Vector3d p3d = project2Dto3D ( x, y, d, fx, fy, cx, cy, depth_scale );
             Eigen::Vector3d p3d = curr_->camera_->pixel2camera(Vector2d(x,y), d);
             //cout << "p3d_points = " << p3d << endl;
             float grayscale = float ( gray.ptr<uchar> (y) [x] );
-            measurements_.push_back ( Measurement ( p3d, grayscale ) );
+            measurements_curr_.push_back ( Measurement ( p3d, cv::Point2f(x,y), grayscale ) );
+            //gradiants_points_curr_.push_back( cv::Point2f(x,y));
         }
     }
-    cout << "gradiantsPoints size is " << measurements_.size() << endl;
+    cout << "gradiantsPoints size is " << measurements_curr_.size() << endl;
 }
 
 void VisualOdometry::poseEstimationDirect()
@@ -480,7 +445,7 @@ void VisualOdometry::poseEstimationDirect()
 
     // 添加边
     int id=1;
-    for ( Measurement m: measurements_ )
+    for ( Measurement m: measurements_curr_ )
     {
         EdgeSE3ProjectDirect* edge = new EdgeSE3ProjectDirect (
                     m.pos_world,
@@ -505,7 +470,7 @@ void VisualOdometry::poseEstimationDirect()
     cv::Mat img_show ( curr_->color_.rows*2, curr_->color_.cols, CV_8UC3 );
     ref_->color_.copyTo ( img_show ( cv::Rect ( 0,0,curr_->color_.cols, curr_->color_.rows ) ) );
     curr_->color_.copyTo ( img_show ( cv::Rect ( 0,curr_->color_.rows,curr_->color_.cols, curr_->color_.rows ) ) );
-    for ( Measurement m:measurements_ )
+    for ( Measurement m:measurements_curr_ )
     {
         if ( rand() > RAND_MAX/5 )
             continue;

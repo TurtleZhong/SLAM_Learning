@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
         cv::cvtColor(pFrame->color_,pFrame->gray_, cv::COLOR_BGR2GRAY);
         pFrame->time_stamp_ = rgb_times[i];
 
-        cv::imshow("gray",pFrame->gray_);
+        //cv::imshow("gray",pFrame->gray_);
         float gray_value = pFrame->findDepth(100, 100); /*test findDepth function*/
         //vo->extractGradiantsPoints();
         cout << "depth is " << gray_value << endl;
