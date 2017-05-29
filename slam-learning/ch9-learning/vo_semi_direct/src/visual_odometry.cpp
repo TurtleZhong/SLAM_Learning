@@ -10,6 +10,7 @@
 #include "visual_odometry.h"
 #include "g2o_types.h"
 #include "g2o_direct.h"
+#include "pointcloud.h"
 
 
 namespace myslam
@@ -22,7 +23,7 @@ VisualOdometry::VisualOdometry() :
     map_ ( new Map ),
     num_lost_ ( 0 ),
     num_inliers_ ( 0 ),
-    matcher_flann_ ( new cv::flann::LshIndexParams ( 5,10,2 ) )
+    matcher_flann_ ( new cv::flann::LshIndexParams ( 5,10,2 )  )
 {
     num_of_features_         = Config::get<int> ( "number_of_features" );
     scale_factor_            = Config::get<double> ( "scale_factor" );
@@ -34,6 +35,12 @@ VisualOdometry::VisualOdometry() :
     key_frame_min_trans      = Config::get<double> ( "keyframe_translation" );
     map_point_erase_ratio_   = Config::get<double> ( "map_point_erase_ratio" );
     orb_ = cv::ORB::create ( num_of_features_, scale_factor_, level_pyramid_ );
+    voxel_grid_              = Config::get<float>("voxel_grid");
+    //viewer_ = pcl::visualization::CloudViewer ("viewer");
+    //pcl::visualization::CloudViewer viewer_tmp("viewer");
+
+
+
 }
 
 VisualOdometry::~VisualOdometry()
@@ -71,6 +78,7 @@ bool VisualOdometry::addFrame ( Frame::Ptr frame )
             if ( checkKeyFrame() == true ) // is a key-frame
             {
                 addKeyFrame();
+
             }
         }
         else // bad estimation due to various reasons
@@ -110,6 +118,8 @@ bool VisualOdometry::addFrame(Frame::Ptr frame, string Method)
     {
         state_ = OK;
         curr_ = ref_ = frame;
+        cloud_ = image2PointCloud( ref_->color_, ref_->depth_ );
+        cout <<"***add pointcloud!!***" << endl;
         // extract features from first frame and add them into map
         extractGradiantsPoints();
         addKeyFrame();      // the first frame is a key-frame
@@ -118,12 +128,25 @@ bool VisualOdometry::addFrame(Frame::Ptr frame, string Method)
     case OK:
     {
         curr_ = frame;
+        cout <<  "curr_->id_: " << curr_->id_ << endl;
+
         poseEstimationDirect();
         curr_->T_c_w_ = T_c_w_estimated_;
         if ( checkKeyFrame() == true ) // is a key-frame
         {
             cout << "/*************add a keyframe!************/" << endl;
             addKeyFrame();
+
+
+            cloud_ = joinPointCloud( cloud_, ref_, ref_->T_c_w_ );
+            //pcl::visualization::CloudViewer viewer("viewer");
+            //viewer.showCloud( cloud_ );
+
+            if(curr_->id_ % 10 == 0)
+            {
+                pcl::io::savePCDFile( "/home/m/work/slam-learning/ch9-learning/vo_semi_direct/results/pcd/result.pcd", *cloud_ );
+            }
+
             measurements_curr_.clear();  /*we need to clear the measurement points cuz update the key-frame*/
             extractGradiantsPoints(); /*cuz update the keyframe so we need to update the gradiants points*/
 
@@ -499,6 +522,67 @@ void VisualOdometry::poseEstimationDirect()
     cv::imshow ( "result", img_show );
     //cv::waitKey ( 27 );
 }
+
+PointCloud::Ptr VisualOdometry::image2PointCloud(cv::Mat color, cv::Mat depth)
+{
+    PointCloud::Ptr cloud ( new PointCloud );
+
+    for (int m = 0; m < depth.rows; m+=1)
+        for (int n=0; n < depth.cols; n+=1)
+        {
+            // 获取深度图中(m,n)处的值
+            ushort d = depth.ptr<ushort>(m)[n];
+            // d 可能没有值，若如此，跳过此点
+            if (d == 0)
+                continue;
+            // d 存在值，则向点云增加一个点
+            PointT p;
+
+            // 计算这个点的空间坐标
+            p.z = double(d) / ref_->camera_->depth_scale_;
+            p.x = (n - ref_->camera_->cx_) * p.z / ref_->camera_->fx_;
+            p.y = (m - ref_->camera_->cy_) * p.z / ref_->camera_->fx_;
+
+            // 从rgb图像中获取它的颜色
+            // rgb是三通道的BGR格式图，所以按下面的顺序获取颜色
+            p.b = color.ptr<uchar>(m)[n*3];
+            p.g = color.ptr<uchar>(m)[n*3+1];
+            p.r = color.ptr<uchar>(m)[n*3+2];
+
+            // 把p加入到点云中
+            cloud->points.push_back( p );
+        }
+    // 设置并保存点云
+    cloud->height = 1;
+    cloud->width = cloud->points.size();
+    cloud->is_dense = false;
+
+    return cloud;
+}
+
+
+PointCloud::Ptr VisualOdometry::joinPointCloud(PointCloud::Ptr original, Frame::Ptr newFrame, SE3 T)
+{
+
+    PointCloud::Ptr newCloud = image2PointCloud( newFrame->color_, newFrame->depth_ );
+
+    // 合并点云
+    PointCloud::Ptr output (new PointCloud());
+    pcl::transformPointCloud( *original, *output, T.matrix() );
+    *newCloud += *output;
+
+    // Voxel grid 滤波降采样
+    static pcl::VoxelGrid<PointT> voxel;
+    float gridsize = voxel_grid_;
+    voxel.setLeafSize( gridsize, gridsize, gridsize );
+    voxel.setInputCloud( newCloud );
+    PointCloud::Ptr tmp( new PointCloud() );
+    voxel.filter( *tmp );
+    return tmp;
+}
+
+
+
 
 
 }

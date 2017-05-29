@@ -23,3 +23,4 @@ min_inliers: 10
 keyframe_rotation: 0.03
 keyframe_translation: 0.03
 map_point_erase_ratio: 0.1
+voxel_grid: 0.01

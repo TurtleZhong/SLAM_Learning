@@ -43,6 +43,17 @@ using Sophus::SO3;
 
 using cv::Mat;
 
+// PCL
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/common/transforms.h>
+#include <pcl/visualization/cloud_viewer.h>
+#include <pcl/filters/voxel_grid.h>
+
+// 类型定义
+typedef pcl::PointXYZRGBA PointT;
+typedef pcl::PointCloud<PointT> PointCloud;
+
 // std 
 #include <vector>
 #include <list>

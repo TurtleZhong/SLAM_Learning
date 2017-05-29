@@ -5,6 +5,7 @@
 #include "map.h"
 #include <opencv2/features2d/features2d.hpp>
 #include "g2o_direct.h"
+//#include "pointcloud.h"
 
 namespace myslam
 {
@@ -54,6 +55,12 @@ public:
     /*direct method members*/
     vector<Measurement>     measurements_curr_;
     vector<cv::Point2f>     gradiants_points_curr_;/*x,y*/
+    /*for pointcloud show*/
+    //pcl::visualization::CloudViewer viewer_;
+    PointCloud::Ptr         cloud_;
+    //Point_Cloud::Ptr        pt_cloud_;
+    float                   voxel_grid_;
+
 
 
 public:
@@ -83,6 +90,11 @@ protected:
     /*direct methods*/
     void extractGradiantsPoints();
     void poseEstimationDirect();
+
+    PointCloud::Ptr image2PointCloud(cv::Mat color, cv::Mat depth);
+
+
+    PointCloud::Ptr joinPointCloud(PointCloud::Ptr original, Frame::Ptr newFrame, SE3 T);
 
 
 };

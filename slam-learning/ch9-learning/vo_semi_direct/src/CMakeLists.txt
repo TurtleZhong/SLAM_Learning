@@ -7,7 +7,9 @@ add_library( myslam SHARED
     config.cpp
     g2o_types.cpp
     g2o_direct.cpp
+    pointcloud.cpp
     visual_odometry.cpp
+
     
 )
 
