@@ -134,9 +134,8 @@ bool VisualOdometry::addFrame(Frame::Ptr frame, string Method)
         curr_->T_c_w_ = T_c_w_estimated_;
         if ( checkKeyFrame() == true ) // is a key-frame
         {
-            cout << "/*************add a keyframe!************/" << endl;
+            cout << GREEN"/*************add a keyframe!************/"GREEN << endl;
             addKeyFrame();
-
 
             cloud_ = joinPointCloud( cloud_, ref_, ref_->T_c_w_ );
             //pcl::visualization::CloudViewer viewer("viewer");
@@ -144,11 +143,15 @@ bool VisualOdometry::addFrame(Frame::Ptr frame, string Method)
 
             if(curr_->id_ % 10 == 0)
             {
-                pcl::io::savePCDFile( "/home/m/work/slam-learning/ch9-learning/vo_semi_direct/results/pcd/result.pcd", *cloud_ );
+                stringstream ss;
+                string tmp;
+                ss << curr_->id_;
+                ss >> tmp;
+                pcl::io::savePCDFile( "/home/m/work/slam-learning/ch9-learning/vo_semi_direct/results/pcd/result" + tmp + ".pcd", *cloud_ );
             }
 
             measurements_curr_.clear();  /*we need to clear the measurement points cuz update the key-frame*/
-            extractGradiantsPoints(); /*cuz update the keyframe so we need to update the gradiants points*/
+            extractGradiantsPoints();    /*cuz update the keyframe so we need to update the gradiants points*/
 
         }
         break;
@@ -308,11 +311,12 @@ bool VisualOdometry::checkEstimatedPose()
 
 bool VisualOdometry::checkKeyFrame()
 {
-    cout << "ref_->T_c_w_ = "<< endl <<  ref_->T_c_w_.matrix()<< endl;
+    //cout << "ref_->T_c_w_ = "<< endl <<  ref_->T_c_w_.matrix()<< endl;
     SE3 T_r_c = ref_->T_c_w_ * T_c_w_estimated_.inverse();
     Sophus::Vector6d d = T_r_c.log();
     Vector3d trans = d.head<3>();
     Vector3d rot = d.tail<3>();
+    cout << "rot.norm = " << rot.norm() << ". trans.norm = " << trans.norm() << endl;
     if ( rot.norm() >key_frame_min_rot || trans.norm() >key_frame_min_trans )
         return true;
     return false;
@@ -428,7 +432,7 @@ void VisualOdometry::extractGradiantsPoints()
                         gray.ptr<uchar>(y)[x+1] - gray.ptr<uchar>(y)[x-1],
                     gray.ptr<uchar>(y+1)[x] - gray.ptr<uchar>(y-1)[x]
                     );
-            if ( delta.norm() < 75 )
+            if ( delta.norm() < 50 )
                 continue;
             ushort d = curr_->depth_.ptr<ushort> (y)[x];
             if ( d==0 )
@@ -487,7 +491,7 @@ void VisualOdometry::poseEstimationDirect()
                 pose->estimate().rotation(),
                 pose->estimate().translation()
                 );
-    cout<<"T_c_w_estimated_: "<<endl<<T_c_w_estimated_.matrix()<<endl;
+    //cout<<"T_c_w_estimated_: "<<endl<<T_c_w_estimated_.matrix()<<endl;
 
     // plot the feature points
     cv::Mat img_show ( curr_->color_.rows*2, curr_->color_.cols, CV_8UC3 );

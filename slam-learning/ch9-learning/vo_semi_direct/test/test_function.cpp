@@ -27,6 +27,7 @@ int main(int argc, char *argv[])
     ifstream fin ( dataset_dir+"/associate.txt" );
     if ( !fin )
     {
+
         cout<<"please generate the associate file called associate.txt!"<<endl;
         return 1;
     }
@@ -76,13 +77,6 @@ int main(int argc, char *argv[])
         pFrame->depth_ = depth;
         cv::cvtColor(pFrame->color_,pFrame->gray_, cv::COLOR_BGR2GRAY);
         pFrame->time_stamp_ = rgb_times[i];
-
-        //cv::imshow("gray",pFrame->gray_);
-        float gray_value = pFrame->findDepth(100, 100); /*test findDepth function*/
-        //vo->extractGradiantsPoints();
-        cout << "depth is " << gray_value << endl;
-
-
 
         boost::timer timer;
         vo->addFrame ( pFrame, "Direct" );
